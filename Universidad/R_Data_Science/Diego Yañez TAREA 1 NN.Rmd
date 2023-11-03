@@ -1,0 +1,114 @@
+---
+title: "Tarea  NN"
+author: "Diego Yáñez"
+date: "2022-08-10"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+```{r}
+install.packages("MASS")
+install.packages("visdat")
+install.packages("neuralnet")
+install.packages("readr")
+library(MASS)
+library(visdat)
+library(neuralnet)
+library(readr)
+```
+
+
+
+```{r}
+seguros <- read_csv("R/Proyectos/Mineria de Datos 2021/seguros.csv")
+seguros <- read_csv("seguros.csv")
+
+#Analisis Exploratorio
+seguros$sexo <- as.factor(seguros$sexo)
+seguros$fumador <- as.factor(seguros$fumador)
+seguros$region <- as.factor(seguros$fumador)
+```
+
+```{r}
+#Regresion para evidenciar diferencias entre los dos modelos
+# Particion de los datos
+
+v1<-NULL #Vector que almacenará los ECM de las 100 simulaciones de la regresion
+
+for (i in 1:100) {
+  id <- sample(1:nrow(seguros),0.8*nrow(seguros),replace = F)
+  
+Entrenamiento <- seguros[id,]
+Prueba <- seguros[-id,]
+  
+  M1 <- lm(cargo_seguromed ~ . , data=Entrenamiento)
+  
+  pred.lm <- predict(M1,Prueba) #Prediccion
+  MSE.lm <- mean ((pred.lm - Prueba$cargo_seguromed)^2)
+  v1[i] <- sqrt(MSE.lm)
+ 
+}
+
+hist(v1, main= "Histograma Regresion", xlab = "ECM")
+```
+
+```{r}
+seguros2 <- read_csv("R/Proyectos/Mineria de Datos 2021/seguros.csv")
+seguros2 <- read_csv("seguros.csv")
+
+
+v2<-NULL #Vector que almacenará los ECM de las 100 simulaciones de la Red Neuronal
+
+  maxs <- apply(seguros2, 2, max) # columnas 
+  mins <- apply(seguros2, 2, min) #filas 
+  scaled <- as.data.frame(scale(seguros2 , center = mins , scale = maxs - mins))
+  
+  
+for (i in 1:100) {
+  id <- sample(1:nrow(seguros2),0.8*nrow(seguros2),replace = F)
+  
+  dtrain.scal <- scaled[id,]
+  dtest.scal  <- scaled[-id,]
+  Prueba2 <- seguros2[-id,]
+  
+  mod.nn2 <- neuralnet(cargo_seguromed ~., data= dtrain.scal, hidden=c(5,3),linear.output = T)
+  pred.nn2 <- compute(mod.nn2, dtest.scal[,1:6])
+  pred.nn_od <- pred.nn2$net.result*(max(seguros2$cargo_seguromed)-min(seguros2$cargo_seguromed))+min(seguros2$cargo_seguromed)
+
+  MSE.nn <- mean((pred.nn_od - Prueba2$cargo_seguromed)^2)
+
+  
+  v2[i] <- sqrt(MSE.nn)
+}
+
+hist(v2, main= "Histograma Red Neuronal", xlab= "ECM")
+```
+
+```{r}
+#Comparando NN - Regresion
+df<- data.frame(Regresion = v1, NN = v2)
+View(df)
+boxplot(df)
+
+mean(v1)
+mean(v2)
+#La media de los ECM del vector 2 (Red Neuronal) es menor.
+
+
+t.test(v1,v2)
+
+
+#Como se rechaza la hipotesis h0 del test t student, las medias de los dos vectores son distintas, por lo tanto, existen diferencias significativas entre las medias.
+```
+
+
+
+
+
+
+
+
