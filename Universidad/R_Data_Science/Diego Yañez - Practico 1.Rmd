@@ -1,0 +1,190 @@
+---
+title: "Práctico Introducción a R"
+author: "Danilo Gómez Correa"
+date: "01-04-2021"
+output:
+  pdf_document: default
+  html_document: default
+---
+<div style="text-align: justify"> 
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+```{r}
+library(tidyverse)
+```
+
+
+1.  Construya dos vectores, el primero con los números enteros desde 7 hasta 3, el segundo vector con los primeros cinco números positivos divisibles por 5. Sea A la condición de ser par en el primer vector. Sea B la condición de ser mayor que 10 en el segundo vector. ¿En cuál de las 5 posiciones se cumple A y B simultáneamente?
+
+```{r}
+v1<-(7:3)
+v2<-seq(5,25,by=5)
+v3<-c()
+
+for (j in 1:5) {
+  v3[j]=5*j
+  
+  
+}
+
+for (i in 1:length(v3)){
+
+  if (v1[i]%%2==0 & v3[i] > 10){
+    cat("En la posicion",i,"se cumple A y B ","\n")
+   
+  }
+}
+
+```
+
+
+2.  Crear dos vectores con los 50 primeros números pares e impares, a los que llamaréis `vp` y `vi`, respectivamente. Concatenar ambos vectores y seleccionar aquellos valores que ocupan posiciones que sean múltiplos de 3.
+
+```{r}
+vp<-c()
+vi<-c()
+
+p<-2
+i<-1
+for (j in 1:50) {
+  vp[j]<-p
+  p<-p+2
+  vi[j]<-i
+  i<-i+2
+}
+
+c<-c(vp,vi)
+multiplos3<-c()
+
+aux<-1
+for (k in 1:length(c)) {
+  if (c[k]%%3==0) {
+    multiplos3[aux]<-c[k]
+    aux<-aux+1
+  }
+}
+```
+
+
+3.  Construya un vector con los siguientes elementos: 1, -4, 5, 9, -4. Escriba un procedimiento para extraer las posiciones donde está el valor mínimo en el vector.
+
+```{r}
+v4<-c(1,-4,5,9,-4)
+vmin<-v4[1]
+
+for (k in 1:length(v4)) {
+  if (vmin>=v4[k]) {
+    vmin<-v4[k]
+
+  }
+}
+
+posmin<-c()
+i<-1
+for (k in 1:length(v4)) {
+  if (vmin==v4[k]) {
+    posmin[i]<-k
+    i<-i+1
+  }
+}
+```
+
+
+4.  Con el uso de `if` `else` y/o `funtion` construya un rutina que primero diga si una ecuacion cuadratica $ax^2+bx+c=0$ tiene dos soluciones reales, tiene unica solucion o no tiene soluciones reales y ademas, de tener soluciones reales que las muestre.(se debe suministrar los valores de $a,b,c$)
+
+```{r}
+a<-1
+b<-2
+c<-1
+
+solucion1<-function(a,b,c){
+ x<- -b+sqrt(b^2-4*a*c)
+ x/2*a
+}
+solucion2<-function(a,b,c){
+ x<- -b-sqrt(b^2-4*a*c)
+ x/2*a
+}
+if (b^2-4*a*c>0) { 
+   "Tiene dos raices reales distintas"
+    } else if (b^2-4*a*c==0) {
+    "Tiene dos raices reales iguales"
+    } else {
+    "No tiene raices reales"
+}
+solucion1(a,b,c) 
+solucion2(a,b,c)
+
+
+  
+
+```
+
+
+5.  Construya una función a la cual le ingrese el salario por hora y el número de horas trabajadas durante una semana por un trabajador. La función debe calcular el salario neto.
+
+```{r}
+salhor<-1000
+horsem<-8
+
+salneto<-function(x,y){
+  x*y
+}
+salneto(salhor,horsem)
+```
+
+
+6.  Construya una función llamada precio que calcule el precio total de sacar A fotocopias y B impresiones, sabiendo que los precios son 50 y 100 pesos para A y B respectivamente si el cliente es un estudiante, y de 75 y 150 para A y B si el cliente es un profesor. La función debe tener dos argumentos cuantitativos (A y B) y el argumento lógico estudiante que por defecto tenga el valor de TRUE. Use la estructura mostrada abajo.
+
+
+```{r}
+
+precio<-function(A,B,estudiante=TRUE){
+  if (estudiante) {
+   precio<- 50*A+100*B
+  }else {
+    precio<-75*A+150*B
+  }
+return(precio)
+}
+
+precio(2,2,FALSE)
+
+```
+
+
+7.  Para explorar la manipulación de datos de `dplyr`, usaremos `nycflights13::flights`. Este marco de datos contiene los 336,776 vuelos que partieron de la ciudad de Nueva York en 2013. Los datos provienen de la Oficina de Estadísticas de Transporte de EE. UU . Y están documentados en `?flights`.
+
+```{r echo=FALSE,include=FALSE}
+install.packages("nycflights13")
+library(nycflights13)
+library(tidyverse)
+nycflights13::flights
+
+str(flights)
+view(flights)
+
+dplyr::filter(flights,arr_delay>=120)
+dplyr::filter(flights,carrier=="UA" | carrier=="AA" | carrier=="DL")
+dplyr::filter(flights,month=="7" | month=="8" | month=="9")
+dplyr::filter(flights,arr_delay>"120" | dep_delay<=0)
+dplyr::filter(flights,dep_delay>="60" & arr_delay<="-30")
+dplyr::filter(flights, dep_time>="0" & dep_time<="600")
+```
+
+a.  Describa cada variable.
+b.  Con el uso de `filter` y operadores logicos encuentre todos los vuelos que:
+
+-   Tuvo un retraso de llegada de dos o más horas
+-   Fueron operados por United, American o Delta
+-   Partidos en verano (julio, agosto y septiembre)
+-   Llegó más de dos horas tarde, pero no se fue tarde
+-   Se retrasaron al menos una hora, pero recuperaron más de 30 minutos en vuelo.
+-   Partió entre la medianoche y las 6 a.m. (inclusive)
+
+
+
+
+ </div>

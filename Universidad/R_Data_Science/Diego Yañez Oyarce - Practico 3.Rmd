@@ -1,0 +1,343 @@
+---
+title: "Diego Yáñez - Práctico 3"
+author: "Diego Yáñez Oyarce"
+date: "03-05-2021"
+output:
+  pdf_document: default
+  html_document: default
+---
+<div style="text-align: justify"> 
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+
+```
+
+El set de datos `stroke-data.csv` contiene información de pacientes suceptibles a subrir un accidente cerebrovascular, para cada uno de los pacientes se tiene información relativa a su situación médica. La descripción de las columnas es la siguiente:
+
+1. "id" $\rightarrow$ Código **único identificador** del paciente
+2. "gender" $\rightarrow$ Género del paciente (binario)
+3. "age" $\rightarrow$ Edad del paciente
+4. "hypertension"   $\rightarrow$ Tiene hipertensión (binario)
+5. "heart_disease" $\rightarrow$ Posee una enfermedad cardiáca (binario)
+6. "ever_married"   $\rightarrow$ Se ha casado alguna vez (binario)
+7. "diabetes_type" $\rightarrow$ Tipo de diabetes que padece el paciente
+8. "work_type" $\rightarrow$ Tipo de trabajo
+9. "Residence_type"   $\rightarrow$ Tipo de residencia (binario)
+10. "avg_glucose_level" $\rightarrow$ Nivel promedio de glucosa en la sangre
+11. "bmi" $\rightarrow$ Índice de masa corporal
+12. "smoking_status" $\rightarrow$ Frecuencia de consumo de cigarro
+13. "stroke" $\rightarrow$ ***Label*** que índica si el paciente tuvo un accidente cerebrovascular
+
+
+## Parte 1
+
+1. Inspeccione el set de datos con las herramientas aprendidas en R e identifique y etiquete los **missing values** presentes en el data frame. Considere tanto valores erroneos como valores inexistentes.
+
+
+```{r}
+library("readr")
+library("tidyverse")
+library("dplyr")
+
+df<-NULL
+
+df<-read.csv2("stroke-data.csv",na.strings = "")
+summary(df)
+view(df)
+
+df$id<-as.character(df$id)
+
+df$hypertension<-as.factor(df$hypertension)
+df$heart_disease<-as.factor(df$heart_disease)
+df$stroke<-as.factor(df$stroke)
+df$ever_married<-as.factor(df$ever_married)
+df$diabetes_type<-as.factor(df$diabetes_type)
+df$gender<-as.factor(df$gender)
+
+df$smoking_status<- as.factor(df$smoking_status)
+df$age<-as.double(df$age)
+
+df$age<-as.integer(df$age)
+
+df$bmi<-as.double(df$bmi)
+df$avg_glucose_level<-as.double(df$avg_glucose_level)
+
+df$age<-trunc(df$age) # La edad es entera
+df[df=="N/A"]<-NA
+df$avg_glucose_level[df$avg_glucose_level<0]<- NA
+df$smoking_status[df$smoking_status=="Unknown"]<- NA
+
+view(df)
+summary(df)
+
+
+```
+
+2. A través de un ciclo for muestre el total de **missing values** presentes en cada una de las columnas, además indique que porcentaje del total de datos son aquellos missin values.
+
+```{r}
+
+missing_values<-0
+mv<-vector("double",ncol(df))
+for (i in 1:length(df)) {
+  mv[[i]]<-sum(is.na(df[[i]]))
+  missing_values<- mv[i]+missing_values
+  cat ("El total de missing values en la columna",i,"es :",mv[i]," y representa el ",round(mean(is.na(df[[i]])),4)*100,"%","\n")
+}
+
+cat("El total de missing values en el data frame es ",missing_values)
+```
+
+
+
+
+
+
+
+3. Con respecto a lo anterior y a la posibilidad de eliminar algún atributo. ¿Eliminaría completamente alguno de los atributos de este data set?¿Por qué?
+
+```{r}
+
+#Si eliminaría un atributo (diabetes_type), ya que los missing values de este atributo representan más del 50% de los datos totales, lo cual convierte el estudio en no representativo.
+```
+
+4. Encuentre la cantidad de datos faltantes por registro y enuncie aquellos que tienen un 50% o más datos faltantes en el registro. De existir, eliminelos de la base de datos. ¿Eliminaría algún otro registro?
+
+```{r}
+  for (i in 1:5110) {
+  for(j in 1:length(nrow(df))){
+   sumafila=sum(is.na(df[i,]))
+  }
+  cat("la suma de NA de la fila",i,"es",sumafila,"\n")
+}
+
+for (i in 1:5110) {
+  for(j in 1:length(nrow(df))){
+   sumafila=sum(is.na(df[i,]))
+   if (sumafila/12 >= 0.5) {
+      cat("El registro de la fila ",i,"tiene ",sumafila," datos faltantes; falta un ", round(sumafila/12*100,2),"% de los datos correspondientes a los atributos ","\n")
+   }
+  }
+}
+
+
+for (i in 1:5110) {
+  for(j in 1:length(nrow(df))){
+   sumafila=sum(is.na(df[i,]))
+   if (sumafila/12 >= 0.5) {
+       datalimpio <- df[-i,]
+       df <- datalimpio
+   }
+  }
+}
+
+#Si eliminaria otro registro, los que contienen NA en la variable dependiente "stroke"
+
+na_label <- c()
+
+for (i in 1:nrow(df)) {
+  if(is.na(df[i,ncol(df)])){
+    na_label <- append(na_label,i)
+  }
+}
+
+
+df <- df[-na_label,]
+row.names(df) <- NULL
+
+summary(df)
+view(df) 
+
+
+
+```
+
+
+
+## Parte 2
+
+En esta segunda parte del práctico usted deberá evaluar que tan buenas han sido las imputaciones de datos que se harán en puntos siguientes. Para esto se debe tener conciencia que ejecutar algún método de imputación de datos no es más que elegir un "modelo" para estimar datos que no se tienen. Para evaluar estas acciones se hace la siguiente división:
+
+- **Variables a predecir:** Son aquellos datos que no tenemos y queremos estimar. En este caso nuestra data a imputar.
+- **Datos de entrenamiento:** Por ahora se le llamará set de entrenamiento a aquellos datos que **si** tenemos y que usaremos como información base para predecir.
+- **Datos de validación o prueba:** Será un subconjunto del set de entrenamiento; se usarán para simular una "predicción" ya que al ser datos que si se tienen, se puede ejecutar una imputación y a la vez comprobar que tan buena fue dicha imputación.
+
+Dado lo anterior: las imputaciones consiguientes que usted debe realizar también las debe evaluar eligiendo una muestar de los datos (100 datos) para usar como datos de validación. La métrica para evaluar datos categóricos será la proporción de aciertos; mientras que para datos numéricos se usará el error cuadrático medio (ECM).
+
+```{r}
+
+ciendatos<-NULL
+muestra<-sample(1:4592,100,replace=F)
+ciendatos <- as.data.frame(df[muestra,])
+view(ciendatos)
+
+
+```
+
+1. Impute los datos de la variable genero utilizando la moda.
+
+```{r}
+library("modeest")
+ciendatos$gender[is.na(ciendatos$gender)]<-mfv(ciendatos$gender)
+view(ciendatos)
+summary(ciendatos)
+
+```
+
+2. Impute los datos de la variable hipertensión usando regresión logística en función del nivel de glucosa. Al ser un ejercicio de conocimiento de los métodos de imputación; no se deberán verificar los supuestos de una regresión, sin embargo, no deja de ser importante.
+
+
+```{r}
+
+ciendatos$avg_glucose_level[is.na(ciendatos$avg_glucose_level)]<-mean(na.omit(ciendatos$avg_glucose_level))
+
+
+
+rl<-glm(hypertension ~ avg_glucose_level, data = ciendatos, family = "binomial")
+
+prediccion <- predict( rl , ciendatos,type = "response")
+prediccion <- ifelse(prediccion > 0.2 , yes = 1 , no = 0)
+
+for (i in 1:nrow(ciendatos)) {
+  if(is.na(ciendatos[i,4])){
+    ciendatos[i,4] <- prediccion[i]
+  }
+}
+summary(ciendatos)
+view(ciendatos)
+```
+
+3. Investigue el método de los k vecinos más cercanos (KNN) y elabore un algoritmo que impute los valores del atributo de enfermedad cardiáca y frecuencia de cigarro.
+
+```{r}
+install.packages("VIM")
+library(VIM)
+
+ciendatos<- kNN(data=ciendatos,k=3,variable=c("heart_disease","smoking_status"))
+view(ciendatos)
+
+
+```
+
+
+4. Impute los datos de la columna índice de masa corporal mediante una regresión lineal simple con respecto a la edad. Al ser un ejercicio de conocimiento de los métodos de imputación; no se deberán verificar los supuestos de una regresión, sin embargo, no deja de ser importante.
+
+```{r}
+library(stats)
+
+imputacionrl<-NULL
+imputacionrl<-ciendatos[c(3,11)]
+view(imputacionrl)
+
+rl<-lm(bmi ~ age,data=imputacionrl, na.action = na.exclude)
+summary(rl) # si posee un r squared muy bajo, significa que la variable edad no explica a la variable IMC  
+
+# bmi= Intercepto + B*edad + error 
+# bmi<- 22.68835 +  0.14040*edad 
+
+
+imputacionrl$bmi[is.na(imputacionrl$bmi) ] <- 22.68835 + 0.14040*imputacionrl$age
+view(imputacionrl)
+
+grafico1<-ggplot(imputacionrl,aes(age,bmi))
+grafico1+geom_point()+geom_smooth(method = "lm",colour="Red")
+
+
+```
+ 
+5. Elija un atributo y compare tres métodos de imputación (cualquiera) ¿Cuál es mejor?
+
+```{r}
+
+#Usaremos los mismos valores del data frame ciendatos para hacer las imputaciones sobre el atributo diabetes_type
+
+
+ciendatos2<-ciendatos
+ciendatos3<-ciendatos
+
+view(ciendatos2)
+view(ciendatos3)
+
+#Imputacion de la variable diabetes_type por moda
+ciendatos$diabetes_type[is.na(ciendatos$diabetes_type)]<-mfv(na.omit(ciendatos$diabetes_type))
+view(ciendatos)
+
+set.seed(123)
+muestra<- sample_n(na.omit(df),size=100,replace = FALSE)
+
+muestra$diabetes_type_imp<-mfv(na.omit(ciendatos$diabetes_type))
+view(muestra)
+
+aciertos<-nrow(filter(muestra,muestra$diabetes_type==muestra$diabetes_type_imp))
+
+cat("El porcentaje de aciertos de la imputacion por la moda del atributo tipo de diabetes es de un ",aciertos,"%")
+
+#Imputacion de la variable diabetes_type por metodo knn
+library(VIM)
+
+muestra2<-NULL
+
+ciendatos2<-kNN(data=ciendatos2,k=5,variable=c("diabetes_type"))
+view(ciendatos2)
+
+set.seed(123)
+muestra2<- sample_n(na.omit(df),size=100,replace = FALSE)
+
+muestra2$diabetes_type_imp<-ciendatos2$diabetes_type
+
+aciertos<-nrow(filter(muestra2,muestra2$diabetes_type==muestra2$diabetes_type_imp))
+
+cat("El porcentaje de aciertos con el metodo de imputacion por muestreo aleatorio es de un", aciertos,"%")
+
+
+
+aciertos2<- 
+cat("El porcentaje de aciertos de la imputacion por la moda del atributo tipo de diabetes es de un ",aciertos,"%")
+
+
+#Imputacion por muestreo aleatorio 
+
+rand.imputed<-function(x){
+  missing<-is.na(x)
+  n.missing<-sum(missing)
+  x.obs<- x[!missing]
+  imputed <- x
+  
+  imputed[missing] <- sample(x.obs , n.missing , replace= TRUE)
+  return(imputed)
+}
+
+random.imputed.ciendatos3<-function(dataframe,cols){
+  names <- names(dataframe)
+  for (col in cols) {
+    name<-paste(names[col], "imputed",sep = ".")
+    dataframe[name] = rand.imputed (dataframe[,col])
+  }
+  dataframe
+}
+
+ciendatos3 <- random.imputed.ciendatos3(ciendatos3,7)
+view(ciendatos3)
+
+set.seed(123)
+muestra3<- sample_n(na.omit(df),size=100, replace=FALSE)
+
+view(muestra3)
+
+muestra3$diabetes_type_imp<-ciendatos3$diabetes_type.imputed
+aciertos<-nrow(filter(muestra3,muestra3$diabetes_type==muestra3$diabetes_type_imp))
+
+cat("El porcentaje de aciertos con el metodo de imputacion por muestreo aleatorio es de un", aciertos,"%")
+
+
+
+#El mejor metodo para imputar sería el metodo kNN, dado que posee un mayor porcentaje de aciertos.
+
+```
+
+
+</div>
+

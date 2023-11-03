@@ -1,0 +1,469 @@
+---
+title: "Práctico II - Domar Datos"
+author: "Diego Yañez Oyarce"
+date: "18-04-2021"
+output:
+  pdf_document: default
+  html_document: default
+---
+<div style="text-align: justify"> 
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyr)
+library(dplyr)
+```
+
+## Parte 1
+
+1. Con el uso de `for` o `doble for` cree una matriz:
+
+a. de dimensión $(5,5)$.
+b. Identidad de dimensión  $(6,6)$.
+c. Estocastica de dimensión $(7,7)$, excepto la matriz identidad.
+d. Doblemente Estocastica de dimensión $(8,8)$, excepto la matriz identidad.
+
+```{r}
+## a
+
+m1<-matrix(nrow = 5,ncol=5)
+
+aux<-1
+for (j in 1:5) {
+  for (i in 1:5) {
+    m1[i,j]<-aux
+    aux<-aux+1
+  }
+}
+print(m1)
+
+m2<-matrix(nrow=5,ncol=5)
+for (j in 1:5) {
+  for (i in 1:5) {
+    m2[i,j]<-runif(1,0,2)
+  }    
+}
+print(m2)
+
+
+## b
+m3<-matrix(nrow = 6,ncol = 6)
+for (j in 1:6) {
+  for (i in 1:6) {
+    if (i==j) {
+      m3[i,j]<-1
+    }else
+    m3[i,j]<-0
+  }    
+}
+print(m3)
+
+## c 
+
+n<-7
+
+m4<-matrix(nrow=n,ncol=n)                   #llenar matriz con runif
+for (j in 1:n) {
+  for (i in 1:n) {
+      m4[i,j]<-runif(1,0,1)
+  }
+}
+
+print(m4)
+
+
+
+sumafila<-0
+
+print("Las sumas por filas (antes del algoritmo)  del 1 al 7  respectivamente, son:")
+
+for (j in 1:n) {
+  sumafila<-0
+for (i in 1:n) {
+  sumafila<-sumafila+m4[j,i]
+}
+  print(sumafila)
+if (sumafila!=1) {
+  m4[j,]<-m4[j,]/mean(sumafila)
+  }
+} 
+
+print("Luego del algoritmo, la nueva matriz es :")
+print(m4)
+
+
+for (j in 1:n) {
+  sumafila<-0
+  for (i in 1:n) {
+    sumafila<-sumafila+m4[j,i]
+  }
+  cat("La suma de la fila",j , "es", sumafila ,"\n")
+}
+
+## d
+m5<-matrix(nrow=8,ncol=8)
+for (j in 1:8) {
+  for (i in 1:8) {
+      m5[i,j]<-1/8
+  }
+}
+print(m5)
+
+for (j in 1:8) {
+  sumafila<-0
+  for (i in 1:8) {
+    sumafila<-sumafila+m5[j,i]
+  }
+  cat("La suma de la fila",j , "es", sumafila ,"\n")
+}
+
+for (i in 1:8) {
+  sumacolumna<-0
+  for (j in 1:8) {
+    sumacolumna<-sumacolumna+m5[j,i]
+  }
+  cat("La suma de la columna",j , "es", sumacolumna ,"\n")
+}
+
+
+
+
+
+```
+
+
+
+2. Dada la siguente Matriz:
+
+  $$ P=\left(  \begin{array}{lllll}
+    0,50 & 0,20 &0,15  &0,10  & 0,05 \\
+     0,30& 0,30 & 0,20 & 0,15 &0,05  \\
+    0,10 & 0,20 & 0,40 & 0,20 &0,10  \\
+    0,05 & 0,15 & 0,20 & 0,30 & 0,30 \\
+    0,10 & 0,15 & 0,15 & 0,20 & 0,40 \\
+  \end{array}
+\right)$$
+construya una programa con el uso de `for` que ubique la posicion de todos los elemneto $a_{ij}>0.2$ y evidencie el  valor del elemento.
+
+```{r}
+a<-c(0.5,0.3,0.1,0.05,0.1)
+b<-c(0.2,0.3,0.2,0.15,0.15)
+f<-c(0.15,0.2,0.4,0.2,0.15)
+d<-c(0.1,0.15,0.2,0.3,0.2)
+e<-c(0.05,0.05,0.1,0.3,0.4)
+
+p<-matrix(c(a,b,f,d,e),nrow=5,ncol=5)
+
+for (j in 1:5) {
+  for (i in 1:5) {
+    if (p[i,j]>0.2) {
+      cat("La posicion P (",i," , ", j,")"," = ",p[i,j],"es mayor que 0.2","\n")
+    }
+  }
+}
+```
+
+3. El método de Newton–Raphson se ideo para resolver ecuaciones no lineales, es decir ecuaciones que tiene como solucion valores no exatos, se pide investigar el método y resolver con el uso de `for` la siguente ecuación:
+
+$$\cos(x)=e^{x}\qquad \text{ó} \qquad \cos(x)-e^{x}=0  $$
+considere un error de estimación no superior a $0,001$
+
+```{r}
+library(tidyverse)
+
+
+f1<-function(x){
+  cos(x)-exp(x)
+}
+
+
+f1d<-function(x){
+  -sin(x)-exp(x)
+}
+
+f<-function(x){
+  x-f1(x)/f1d(x)
+}
+
+
+x0<--3
+k<-1
+
+for (i in 1:100){
+  x1<-f(x0)
+  cat("i= ",i," x(",i-1,") = ",x0," x(",i,") = ",x1)
+  if (abs(x1-x0) < 0.001) {
+    cat("\n","El resultado final es x(",k,")","=",x1)
+    break
+  }
+   x0<-x1
+  cat("\n","El resultado x( ",k,")","es",x1,"\n","\n")
+  k<-k+1
+
+}
+
+```
+## Parte 2
+
+
+1. Dado el siguiente dataframe:
+
+```{r}
+
+library(tidyverse)
+
+calificaciones <- data.frame(
+  "nombre_completo" = c("Juan Pérez","Juan Pérez","Juan Pérez",
+                        "Javiera Soto","Javiera Soto","Javiera Soto",
+                        "Daniel Castillo","Daniel Castillo","Daniel Castillo",
+                        "Camila Delgado","Camila Delgado","Camila Delgado"),
+  "asignatura" = c("Cálculo","Química","Física",
+                   "Cálculo","Química","Física",
+                   "Cálculo","Química","Física",
+                   "Cálculo","Química","Física"),
+  "notas" = c(7,5.5,3.4,
+              6.5,1.2,6.3,
+              2.3,5,5.3,
+              3.4,7,5.6))
+print(calificaciones)
+view(calificaciones)
+```
+
+  a) Utilizar la función `spread` para extender las calificaciones de los estudiantes de forma horizontal.
+  
+```{r}
+a<-spread(data=calificaciones,key=asignatura,value=notas)
+a<-spread(calificaciones,asignatura,notas)
+view(a)
+```
+  
+  b) Utilice la función `gather` para volver a reunir los datos como estaban.
+  
+  
+```{r}
+
+
+b<-gather(data = a,key=asignatura,value=notas,2:4)
+view(b)
+
+
+```
+
+  
+  c) Separe el nombre completo del estudiante en `nombre` y `apellido
+  
+```{r}  
+  
+c<-separate(data=calificaciones, col=nombre_completo,into=c("nombre","apellido"), sep=" ")
+view(c)
+
+```
+
+  d) Vuelva a unir el nombre y apellido del estudiante para reconstituir la columna `nombre_completo`
+  
+  
+```{r}
+
+d<-unite(data=c,col=Nombre_Completo,sep=" ",nombre,apellido)
+view(d)
+```
+  
+  
+2. Muestre un listado con los nombres de los estudiantes (sin repetir), haga lo mismo para las asignaturas.
+
+```{r}
+e<-dplyr::distinct(calificaciones,nombre_completo)
+view(e)
+
+f<-dplyr::distinct(calificaciones,asignatura)
+view(f)
+```
+
+3. Muestre la tabla `calificaciones` solo para Juan Pérez:
+
+```{r}
+
+
+g<-dplyr::filter(calificaciones,nombre_completo=="Juan Pérez")
+view(g)
+
+
+
+
+
+
+
+```
+
+
+4. Muestre los promedios de notas por cada asignatura.
+
+
+```{r}
+
+h<-by(calificaciones$notas, calificaciones$asignatura  , mean )
+view(h)
+
+i<-by(calificaciones$notas,calificaciones$nombre_completo,mean)
+view(i)
+
+
+```
+
+
+
+
+## Parte 3
+
+En la plataforma de adecca podrán encontrar 3 archivos de datos, los cuales corresponden a un banco ficticio que ha logrado almacenar la información de 10.000 clientes a los cuales se les ofreció un seguro complementario a su plan en el banco. La empresa ha recopilado estos datos a fin de tomar decisiones más acertadas en sus inminentes campañas comerciales para la venta de seguros complementarios, estos son:
+
+- `CLIENTES1.csv` y `CLIENTES2.csv`: Los cuales contienes información de cada cliente en 2 tablas separadas.
+- `EQUIVALENCIAS.xlsx`: Contiene 3 tablas que ayudarán a entender las equivalencias de variables categóricas.
+
+Atributos del cliente:
+
+- id Cliente
+- Edad
+- Profesión
+- Salario mensual
+- Deuda acumulada con el banco el último mes
+- Signo Zodiacal
+- Cantidad de hijos
+- Región de residencia
+- Contrata seguro
+
+1. Realice lo siguiente
+
+a) Considerando los siguientes tipos de datos, decida que tipo de variable es cada uno de los atributos.
+  - Cualitativos nominales
+  - Cualitativos ordinales
+  - Cuantitativos discretos
+  - Cuantitativos continuos
+  
+# id Cliente = Cualitativo ordinal
+# Edad = Cuantitativa discreta
+# Profesión = Cualitativa nominal
+# Salario Mensual = Cuantitativa discreta
+# Deuda acumulada con el banco el ultimo mes = Cuantitativa discreta
+# Signo Zodiacal = Cualitativa nominal
+# Cantidad de Hijos = Cuantitativa discreta
+# Región de residencia = Cualitatitva nominal
+# Contrata seguro = Cualitativo ordinal
+  
+  
+b) Importe los set de datos a R Studio y cree dos dataframes `df1` con la información de `CLIENTES1.csv` y `df2` con la información de `CLIENTES2.csv` y unalos para crear solo un dataset llamado `df3`. Luego de esto muestre un resumen del dataset df3 y de sus observaciones de dicho resumen:
+
+
+```{r}
+library("readxl")
+library("readr")
+
+df1<-read.csv2("clientes1.csv")
+view(df1)
+df2<-read.csv2("clientes2.csv")
+view(df2)
+
+df3<-left_join(df1,df2) 
+view(df3)  
+
+summary(df3)
+# Al visualizar un resumen de los datos, se puede observar que hay datos que no son fidedignos como por ejemplo, existen datos negativos en la cantidad de hijos, o que existen deudas negativas en los datos, en este mismo atributo habría que verificar si los datos extraños como por ejemplo la deuda de 9897465465 es un número correcto, ya que es muy anormal. Sepodría decir que mas o menos la mitad de los clientes contratan seguro y que todos poseen una profesión. El tamaño de los vectores ID_cliente, Signo, Profesion y Region_Residencia coincide. 
+```
+
+
+
+
+
+2. Los atributos `REGION_RESIDENCIA`,`SIGNO_ZODIACAL` y `PROFESION` poseen una tabla de conversión en la planilla `EQUIVALENCIAS.xlsx`. Utilice las funciones que hay disponibles para que pueda transformar los números de los atributos nombrados en sus correspondiestes nombres según la equivalencia. (Recuerde que debe importar las tablas contenidas en la planilla excel a R Studio)
+
+```{r}
+df5<-read_xlsx("equivalencias.xlsx")
+view(df5)
+df6<-read_xlsx("equivalencias.xlsx",2)
+view(df6)
+df7<-read_xlsx("equivalencias.xlsx",3)
+view(df7)
+
+colnames(df5)<-c("SIGNO","SIGNO_ZODIACAL") #CAMBIAMOS NOMBRE DE COLUMNAS PARA QUEE COINCIDAN EN DF3 Y DF5
+view(df5)
+df3<-dplyr::left_join(df3, df5, by = "SIGNO_ZODIACAL")
+df3$SIGNO_ZODIACAL=NULL
+view(df3)
+
+view(df6)
+colnames(df3)[3]<-"CODIGO PROFESION" #CAMBIAMOS NOMBRE DE COLUMNAS PARA QUEE COINCIDAN EN DF3 Y DF6
+colnames(df6)<-c("PROFESION","CODIGO PROFESION")
+df3<-dplyr::left_join(df3, df6, by = "CODIGO PROFESION")
+df3$PROFESION_NOMBRE=NULL
+df3$CODIGO_PROFESION=NULL
+
+colnames(df7)<-c("REGION_RESIDENCIA","CODIGO_REGION")
+colnames(df3)[7]<-"CODIGO_REGION"
+df3<-dplyr::left_join(df3, df7, by = "CODIGO_REGION")
+df3$CODIGO_REGION=NULL
+
+view(df3)
+```
+
+
+3. El operador pipe (`%>%`) nos ayuda a realizar acciones en un dataframe de una manera más ordenada, por tanto se pide que mediante el uso de este operador realice las siguientes acciones:
+
+- Seleccione los atributos de sueldo, edad y cantidad de hijos
+
+```{r}
+u<-df3 %>% select(SALARIO_MENSUAL,EDAD,CANTIDAD_HIJOS)
+view(u)
+```
+
+
+
+- Filtre por por aquellos que tienen 3 o más hijos
+
+```{r}
+i<-df3 %>%filter(CANTIDAD_HIJOS>=3)
+view(i)
+```
+
+
+- Muestre un resumen de los atributos seleccionados (ya filtrados)
+
+```{r}
+df3 %>% summary(i)
+
+```
+
+
+4. Muestre una tabla de frecuencias y un gráfico de barra para las variables cualitativas. Sugerencia: Utilice la función `table`.
+
+```{r}
+t1<-table(df3$PROFESION)
+t2<-table(df3$SIGNO)
+t3<-table(df3$REGION_RESIDENCIA)
+
+
+barplot(t1)
+barplot(t2)
+barplot(t3)
+
+
+
+```
+
+
+5. Ejecute la siguiente línea de código e interprete el significado de los dos gráficos que se originan (por separado).
+
+
+`boxplot(df3$SALARIO_MENSUAL)`
+
+`boxplot(df3$DEUDA_ULTIMO_MES)`
+
+```{r}
+boxplot(df3$SALARIO_MENSUAL)
+#No existen valores atipicos
+
+boxplot(df3$DEUDA_ULTIMO_MES)
+#Existen
+```
+
+
+ </div>

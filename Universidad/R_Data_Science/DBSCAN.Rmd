@@ -1,0 +1,263 @@
+---
+title: "DBSCAN"
+author: "Danilo Gómez Correa"
+date: "`r Sys.Date()`"
+output:
+  word_document:
+    toc: yes
+    toc_depth: '3'
+  html_document:
+    toc: yes
+    toc_float: yes
+    toc_collapsed: no
+    toc_depth: 3
+    number_sections: yes
+    theme: paper
+    highlight: tango
+  pdf_document:
+    toc: yes
+    toc_depth: '3'
+subtitle: Topicos Avanzados de Mineria de Datos | ICI | UBB 
+---
+
+```{=html}
+<style>
+body {
+text-align: justify}
+</style>
+```
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(message = FALSE)
+```
+
+# Introducción
+
+El término clustering hace referencia a un amplio abanico de técnicas no supervisadas cuya finalidad es encontrar patrones o grupos (clusters) dentro de un conjunto de observaciones. Las particiones se establecen de forma que, las observaciones que están dentro de un mismo grupo, son similares entre ellas y distintas a las observaciones de otros grupos. Se trata de un método no supervisado, ya que el proceso ignora la variable respuesta que indica a que grupo pertenece realmente cada observación (si es que existe tal variable). Esta característica diferencia al clustering de las técnicas supervisadas, que emplean un set de entrenamiento en el que se conoce la verdadera clasificación.
+
+Dada la utilidad del clustering en disciplinas muy distintas (genómica, marketing...), se han desarrollado multitud de variantes y adaptaciones de sus métodos y algoritmos. Pueden diferenciarse tres grupos principales:
+
+-   Partitioning Clustering: Este tipo de algoritmos requieren que el usuario especifique de antemano el número de clusters que se van a crear (K-means, K-medoids, CLARA).
+
+-   Hierarchical Clustering: Este tipo de algoritmos no requieren que el usuario especifique de antemano el número de clusters. (agglomerative clustering, divisive clusterig).
+
+-   Métodos que combinan o modifican los anteriores (hierarchical K-means, fuzzy clustering, model based clustering y density based clustering).
+
+En el entorno de programación `R` existen múltiples paquetes que implementan algoritmos de clustering y funciones para visualizar sus resultados. En este documento se emplean los siguientes:
+
+-   `stats`: contiene las funciones `dist()` para calcular matrices de distancias,`kmeans()`, `hclust()`, `cuttree()` para crear los clusters y `plot.hclust()` para visualizar los resultados.
+
+-   `cluster`, `mclust`: contienen múltiples algoritmos de clustering y métricas para evaluarlos.
+
+-   `factoextra`: extensión basada en `ggplot2` para crear visualizaciones de los resultados de clustering y su evaluación.
+
+-   `dendextend`: extensión para la customización de dendrogramas.
+
+# Agrupación espacial basada en densidad de Aplicaciones con ruido: Density based clustering (DBSCAN) 
+
+**Idea intuitiva**
+
+Density-based spatial clustering of applications with noise (DBSCAN) fue presentado en 1996 por Ester et al. como una forma de identificar clusters siguiendo el modo intuitivo en el que lo hace el cerebro humano, identificando regiones con alta densidad de observaciones separadas por regiones de baja densidad. 
+
+ En datos espaciales, los clusters son regiones densas, separadas por regiones con objetos de baja densidad. 
+ 
+- Se basa en una noción de cluster basada en densidad.
+- Descubre clusters de forma arbitraria en bases de datos espaciales con ruido, Agrupar puntos en alta densidad, marca como valores atípicos los puntos que se encuentran solos en regiones de baja densidad.
+
+
+Véase la siguiente representación bidimensional de los datos multishape del paquete `factoextra`.
+
+![](DB1.PNG)
+
+
+El cerebro humano identifica fácilmente 5 agrupaciones y algunas observaciones aisladas (ruido). Véanse ahora los clusters que se obtienen si se aplica, por ejemplo, K-means clustering.
+
+
+```{r}
+library(factoextra)
+data("multishapes")
+View(multishapes)
+datos <- multishapes[, 1:2]
+set.seed(321)# semilla 
+
+km_clusters <- kmeans(x = datos, centers = 5, nstart = 50)
+
+
+
+fviz_cluster(object = km_clusters, data = datos, geom = "point", 
+             ellipse = FALSE,
+             show.clust.cent = FALSE, pallete = "jco") +
+             theme_bw() +
+             theme(legend.position = "none")
+```
+
+
+
+
+
+
+
+
+
+
+Los clusters generados distan mucho de representar las verdaderas agrupaciones. Esto es así porque los métodos de partitioining clustering como k-means, hierarchical, k-medoids, c-means... son buenos encontrando agrupaciones con forma esférica o convexa que no contengan un exceso de outliers o ruido, pero fallan al tratar de identificar formas arbitrarias. De ahí que el único cluster que se corresponde con un grupo real sea el amarillo.
+
+`DBSCAN` evita este problema siguiendo la idea de que, para que una observación forme parte de un cluster, tiene que haber un mínimo de observaciones vecinas dentro de un radio de proximidad y de que los clusters están separados por regiones vacías o con pocas observaciones.
+
+**Definiciones:** La densidad del punto local en un punto p esta definida por dos parámetros:
+
+1. $\varepsilon$ : Radio para la vecindad $(\varepsilon-Neighborhood )$ del punto $p$.
+-  $\varepsilon - Neighborhood $ : son todos los puntos dentro de un radio de $\varepsilon$ desde el punto $p$ 
+-  $N_\varepsilon (p): = {q\quad \text{en el conjunto de datos}\quad D | dist (p, q) ≤ \varepsilon}$
+
+2.- MinPts: Número mínimo de puntos en el vecindario dado $N (p)$
+
+![](DBC1.PNG)
+
+Si el MinPts es 4
+
+- La densidad de p es Alta
+- La densidad de q es Baja
+
+**Obs:** 
+
+El algoritmo DBSCAN necesita dos parámetros:
+
+- Epsilon $(\varepsilon)$: radio que define la región vecina a una observación, también llamada $\varepsilon$-neighborhood.
+
+- Minimum points (minPts): número mínimo de observaciones dentro de la región epsilon.
+
+Empleando estos dos parámetros, cada observación del set de datos se puede clasificar en una de las siguientes tres categorías:
+
+- Core point: observación que tiene en su $\varepsilon$-neighborhood un número de observaciones vecinas igual o mayor a minPts.
+
+- Border point: observación no satisface el mínimo de observaciones vecinas para ser core point pero que pertenece al $\varepsilon$-neighborhood de otra observación que sí es core point.
+
+- Noise u outlier: observación que no es core point ni border point.
+
+
+![](DBC.PNG)
+
+
+
+
+
+
+Por último, empleando las tres categorías anteriores se pueden definir tres niveles de conectividad entre observaciones:
+
+
+
+
+
+
+
+- Directamente alcanzable (direct density reachable): una observación $A$ es directamente alcanzable desde otra observación $B$ si $A$ forma parte del $\varepsilon$-neighborhood de $B$ y $B$ es un core point. Por definición, las observaciones solo pueden ser directamente alcanzables desde un core point.
+
+- Alcanzable (density reachable): una observación $A$ es alcanzable desde otra observación $B$ si existe una secuencia de core points que van desde $B$ a $A$.
+
+- Densamente conectadas (density conected): dos observaciones $A$ y $B$ están densamente conectadas si existe una observación core point $C$ tal que $A$ y $B$ son alcanzables desde $C$.
+
+La siguiente imagen muestra las conexiones existentes entre un conjunto de observaciones si se emplea $minPts=4$. La observación $A$ y el resto de observaciones marcadas en rojo son core points, ya que todas ellas contienen al menos 4 observaciones vecinas (incluyéndose a ellas mismas) en su $\varepsilon$-neighborhood. Como todas son alcanzables entre ellas, forman un cluster. Las observaciones $B$ y $C$ no son core points pero son alcanzables desde $A$ a través de otros core points, por lo tanto, pertenecen al mismo cluster que $A$. La observación $N$ no es ni un core point ni es directamente alcanzable, por lo que se considera como ruido.
+
+![](DB2.PNG)
+
+
+
+
+**Algoritmo**
+
+1. Para cada observación $x_i$ calcular la distancia entre ella y el resto de observaciones. Si en su ϵ-neighborhood hay un número de observaciones $≥minPts$ marcar la observación como core point, de lo contrario marcarla como visitada.
+
+2. Para cada observación $x_i$ marcada como core point, si todavía no ha sido asignada a ningún cluster, crear uno nuevo y asignarla a él. Encontrar recursivamente todas las observaciones densamente conectadas a ella y asignarlas al mismo cluster.
+
+3. Iterar el mismo proceso para todas las observaciones que no hayan sido visitadas.
+
+4. Aquellas observaciones que tras haber sido visitadas no pertenecen a ningún cluster se marcan como outliers.
+
+
+
+Como resultado, todo cluster cumple dos propiedades: todos los puntos que forman parte de un mismo cluster están densamente conectados entre ellos y, si una observación A es densamente alcanzable desde cualquier otra observación de un cluster, entonces A también pertenece al cluster.
+
+
+![](DBC2.PNG)
+![](DBC3.PNG)
+![](DBC4.PNG)
+![](DBC5.PNG)
+![](DBC6.PNG)
+![](DBC7.PNG)
+![](DBC8.PNG)
+**Selección de parámetros**
+
+Como ocurre en muchas otras técnicas estadísticas, en DBSCAN no existe una forma única y exacta de encontrar el valor adecuado de epsilon ($\varepsilon$) y minPts. A modo orientativo se pueden seguir las siguientes premisas:
+
+- minPts: cuanto mayor sea el tamaño del set de datos, mayor debe ser el valor mínimo de observaciones vecinas. En el libro Practical Guide to Cluster Analysis in R recomiendan no bajar nunca de 3. Si los datos contienen niveles altos de ruido, aumentar minPts favorecerá la creación de clusters significativos menos influenciados por outliers.
+
+- epsilon: una buena forma de escoger el valor de $\varepsilon$ es estudiar las distancias promedio entre las $k=minPts$ observaciones más próximas. Al representar estas distancias en función de ϵ, el punto de inflexión de la curva suele ser un valor óptimo. Si el valor de ϵ escogido es muy pequeño, una proporción alta de las observaciones no se asignarán a ningún cluster, por el contrario, si el valor es demasiado grande, la mayoría de observaciones se agruparán en un único cluster.
+
+
+**Ventajas de DBSCAN**
+
+- No requiere que el usuario especifique el número de clusters.
+
+- Es independiente de la forma que tengan los clusters, no tienen por qué ser circulares.
+
+- Puede identificar outliers, por lo que los clusters generados no se influenciados por ellos.
+
+
+**Desventajas de DBSCAN**
+
+- No es un método totalmente determinístico: los border points que son alcanzables desde más de un cluster pueden asignarse a uno u otro dependiendo del orden en el que se procesen los datos.
+
+- No genera buenos resultados cuando la densidad de los grupos es muy distinta, ya que no es posible encontrar los parámetros ϵ y minPts que sirvan para todos a la vez.
+
+
+
+**Ejemplo**
+
+
+El set de datos multishape del paquete factoextra contiene observaciones que pertenecen a 5 grupos distintos junto con cierto ruido (outliers). Como se espera que la distribución espacial de los grupos no sea esférica, se aplica el método de clustering DBSCAN.
+
+En R existen dos paquetes con funciones que permiten aplicar el algoritmo DBSCAN: `fpc y dbscan`. El segundo contiene una modificación del algoritmo original que lo hace más rápido. La función kNNdistplot del paquete dbscan calcula y representa las k-distancias para ayudar a identificar el valor óptimo de epsilon.
+
+
+
+
+
+
+```{r}
+#install.packages("fpc")
+#install.packages("dbscan")
+library(fpc)
+library(dbscan)
+library(factoextra)
+data("multishapes")
+datos <- multishapes[, 1:2]
+
+
+
+# Selección del valor óptimo de epsilon. Como valor de minPts se emplea 5.
+#dbscan::kNNdistplot(datos, k = 4)
+
+```
+
+La curva tiene el punto de inflexión en torno a 0.15, por lo que se escoge este valor como epsilon para DBSCAN.
+
+
+```{r}
+set.seed(321)
+# DBSCAN con epsilon = 0.15 y minPts = 5
+dbscan_cluster <- fpc::dbscan(data = datos, eps = 0.15, MinPts = 4)
+
+# Resultados de la asignación
+head(dbscan_cluster$cluster)
+```
+```{r}
+# Visualización de los clusters
+fviz_cluster(object = dbscan_cluster, data = datos, stand = FALSE,
+             geom = "point", ellipse = FALSE, show.clust.cent = FALSE,
+             pallete = "jco") +
+  theme_bw() +
+  theme(legend.position = "bottom")
+```
+
+

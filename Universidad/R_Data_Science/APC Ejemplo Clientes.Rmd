@@ -1,0 +1,146 @@
+---
+title: "ACP 08-09-2021"
+author: "Danilo Gómez Correa"
+date: "09-04-2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+#install.packages("")
+library(tidyverse)# Manipualcion
+library("FactoMineR") # Cluster y ACP
+library("factoextra") ## Cluster y ACP
+library(magrittr) ######
+library(readxl) # Lectura de xls
+library(skimr)# Analisis exporatorios
+```
+
+
+# Descripcion del data set:  set datos clientes que se aplica una encusta de satisfaccion esla es de 1:10 y otras variables.
+
+Se pide:
+
+- Un ACP.
+- Cuanta informacion capturada
+- Representacion de los individuos indentificar INd mal representados.
+- Representacion de los individuos indentificar INd mal representados.
+- Individuos fuera rango.
+
+
+
+
+
+## Cargar datos
+
+```{r}
+EC<- read_excel("EjemploClientes.xlsx")
+view(EC)
+df<-EC[,-1]
+row.names(df)<-EC$`Nombre Cliente`
+view(df)
+colnames(df)
+row.names(df)
+```
+
+## Resumen de datos.
+
+```{r}
+
+df<-df[c(-4,-5),c(-4,-6,-12)]
+summary(df)# Como la uniddad de medidad de cada variables es la misma no es necesario scalar o estandarizar, pero cuando las variables no tengan las mismas unidades de medida si es necesario estandarizar.
+str(df)
+df<-scale(df) # Escalar los datos
+```
+
+## Contruccion de matriz de correlacion
+
+```{r}
+
+#MC<-df %>% cor() %>% round(.,2)
+MC<-round(cor(df),2)
+corrplot(MC, type="upper")
+#Para saber si las variables estan correlacionadas KMO.
+#install.packages("psych")
+library(psych)
+#Si la prueba del KMO es mayor a 0.6 es puede realizar el ACP
+KMO(MC)
+pairs(df)
+```
+
+
+
+
+
+
+
+
+```{r}
+acp <- PCA(df, graph = F) #ACP
+#Como evaluamos la buena representacion de un Individuo
+A<-acp$ind$cos2
+##Veamos si los individuos estan bien representados
+BR<-as.data.frame(A[  ,1:2])
+#BR<-scale(BR)
+BR$Representacion<- (BR$Dim.1+BR$Dim.2)*100
+#plot(BR$Dim.1,BR$Dim.2)
+RBR<-dplyr::arrange(BR,desc(Representacion) )
+
+
+
+valores<- get_eigenvalue(acp)
+#Como evaluamos la buena representacion de las variable
+
+AA<-acp$var$cos2
+
+BR<-as.data.frame(AA[  ,1:2])
+#BR<-scale(BR)
+BR$RepresentacionV<- (BR$Dim.1+BR$Dim.2)*100
+RBRV<-dplyr::arrange(BR,desc(RepresentacionV) )
+
+
+fviz_eig(acp, addlabels = TRUE)
+##Veamos si los individuos estan bien representados
+#BR<-as.data.frame(A)
+#BR<-scale(BR)
+#BR$Representacion<- (BR$Dim.1+BR$Dim.2)*100
+#plot(BR$Dim.1,BR$Dim.2)
+```
+
+
+```{r}
+library("corrplot")
+##Correlaciones
+acp$eig
+var <- get_pca_var(acp) # Obtines todos los calculos del ACP
+
+corrplot(var$cos2, is.corr = FALSE) # Variable vs Dimensión
+
+fviz_pca_var(acp, col.var = "black") #Grafico de radial pra ver correlaciones
+
+fviz_pca_var(acp, col.var = "cos2",
+             gradient.cols = c("#00AFBB", "#E7B800", "#FC4E07"), 
+             repel = TRUE)
+
+
+fviz_pca_ind(acp, col.ind = "cos2", pointsize = "cos2",
+             gradient.cols = c("#00AFBB", "#E7B800", "#FC4E07"),
+             repel = TRUE) 
+
+
+```
+
+```{r}
+library(pca3d)
+acp2<-prcomp(df)
+pca3d(acp2,show.labels =T )
+
+
+```
+
+
+
+

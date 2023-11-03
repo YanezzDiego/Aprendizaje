@@ -1,0 +1,182 @@
+---
+title: "Tarea 2 TAMD"
+author: "Diego Yañez"
+date: "2022-08-25"
+output: html_document
+---
+
+
+
+```{r}
+install.packages("tm")
+install.packages("Snowballc")
+install.packages("wordcloud")
+install.packages("ggplot2")
+install.packages("dplyr")
+install.packages("readr")
+install.packages("tidytext")
+install.packages("dplyr")
+install.packages("tidyverse")
+install.packages("textdata")
+install.packages("reshape2")
+install.packages("syuzhet")
+install.packages("pdftools")
+install.packages("igraph")
+install.packages("ggraph")
+library(ggraph)
+library(igraph)
+library(tm)
+library(SnowballC)
+library(wordcloud)
+library(ggplot2)
+library(dplyr)
+library(readr)
+library(tidytext)
+library(dplyr)
+library(tidyverse)
+library(textdata)
+library(reshape2)
+library(syuzhet)
+library(dplyr)
+library(pdftools)
+library(ggplot2)
+library(NLP)
+library(tidyr)
+library(stringr)
+library(janeaustenr)
+library(tidyverse)
+library(textdata)
+library(tidytext)
+library(RColorBrewer)
+library(tm)
+library(wordcloud)
+
+get_sentiments("afinn")
+get_sentiments("bing")
+get_sentiments("nrc")
+```
+
+```{r}
+# Importar constitucion actual
+chile <- pdf_text(file.choose())
+texto1 <- c(chile)
+```
+
+```{r}
+#Limpieza del texto
+Encoding(texto1) <- "UTF-8"
+texto1 <- gsub("[[:cntrl:]]"," ",texto1)
+texto1 <- gsub("º"," ",texto1)
+texto1 <- tolower(texto1) #palabras a minusculas 
+texto1 <- removePunctuation(texto1) #remueve puntuacion 
+texto1 <- removeWords(texto1, stopwords("spanish")) #remueve palabras que no aportan informacion 
+texto1 <- removeNumbers(texto1) #remueve numeros
+texto1 <- stripWhitespace(texto1) #remueve los espacios
+texto1 <- stringi::stri_trans_general(texto1, "Latin-ASCII")
+```
+
+
+```{r}
+#Tokenizacion
+texto1_df<-tibble(line=1:length( texto1) , text=texto1)
+token1<- unnest_tokens(texto1_df,word,text)
+view(token1)
+```
+
+```{r}
+#Palabras mas frecuentes en tabla y gráfico
+
+token1 <- filter(token1, word!="articulo" & word!="articulos" & word!="arts" & word!="art" & word!="nº" & word!="º" & word!="n")
+
+frecuentes<- count(token1,
+            word,
+            sort = TRUE ) #Ordena de mayor a menor
+
+frecuentes %>%
+  filter(n>=60) %>%
+  mutate(word=reorder(word,n))
+
+token1 %>% 
+  count(word, sort = TRUE) %>%
+  filter(n > 100) %>%
+  mutate(word = reorder(word, n)) %>%
+  ggplot(aes(word, n,fill = word)) +
+  geom_text(aes(label=n), hjust= -0.1) +
+  geom_col() +
+  xlab("Palabras mas frecuentes") +
+  coord_flip()+
+  theme_minimal()
+```
+
+```{r}
+#Nube de palabras
+token1 %>%
+  count(word) %>%
+  with(wordcloud(word,
+                 n,
+                 max.words = 60,
+                 colors=brewer.pal(6,"Dark2")))
+
+```
+```{r}
+#Analisis de sentimiento
+afinn <- read.csv("lexico_afinn.en.es.csv", stringsAsFactors = F, fileEncoding = "latin1")
+names(afinn) <- c("word", "puntuacion", "word en ingles")
+
+chile_sentimientos <- token1 %>% inner_join(afinn, ., by = "word") %>% 
+  mutate(Calificacion = ifelse(puntuacion > 0, "Positiva",
+                               ifelse(puntuacion == 0, "Neutral",
+                                      "Negativa")))
+
+
+#Palabras positivas
+
+positivas1 <- filter(chile_sentimientos, Calificacion == "Positiva") %>% count(word,sort = TRUE) %>% slice_max(order_by = n,n=10)
+
+positivas1 %>% ggplot() + aes(word,n) + geom_col() + scale_y_continuous(expand = c(0,0)) + 
+  coord_flip() + labs(title= "10 palabras positivas más usadas") +
+  xlab( "Palabras")+
+  geom_text(aes(label=n), hjust= -0.1) +
+  theme_minimal()
+
+
+#Palabras negativas
+negativas1 <- filter(chile_sentimientos, Calificacion == "Negativa") %>% count(word,sort = TRUE) %>% slice_max(order_by = n,n=10)
+
+negativas1 %>% ggplot() + aes(word,n) + geom_col() + scale_y_continuous(expand = c(0,0)) + 
+  coord_flip() + labs(title= "10 palabras negativas más usadas") +
+  xlab( "Palabras")+
+  geom_text(aes(label=n), hjust= -0.1) +
+  theme_minimal()
+
+
+#RESUMEN
+
+sentimientos <- chile_sentimientos %>% count(word, Calificacion, sort = T) %>% group_by(Calificacion) %>% top_n(5) %>% ungroup() %>% mutate(word=reorder(word,n))
+
+sentimientos %>% ggplot(aes(word,n,fill=Calificacion)) + geom_col(show.legend = F) + geom_text(aes(label = n), hjust = 1.2) + facet_wrap(~Calificacion, scales = "free_y") + coord_flip() + xlab(NULL)
+
+chile_sentimientos %>% count(word, puntuacion, sort = T) %>% group_by(puntuacion) %>% top_n(5) %>% ungroup() %>% mutate(word = reorder(word,n)) %>% ggplot(aes(word,n,fill=puntuacion)) + geom_col(show.legend = F) + geom_text(aes(label=n), hjust = 1.2) + facet_wrap(~puntuacion, scales = "free_y") + coord_flip() + xlab(NULL)
+
+
+#PROPORCION DE PALABRAS POSITIVAS Y NEGATIVAS
+resumen1 <- chile_sentimientos %>% count(Calificacion) %>% group_by("Constitucion") %>%
+  mutate (Proporcion= n/sum(n))
+
+resumen1 %>% ggplot() + aes("Constitucion", Proporcion, fill = Calificacion) + geom_col() + labs(tittle = "Sentimientos en la propuesta de constitucion")
+
+
+#Polaridad sentimiento / tiempo de lectura
+text_sentiment <- get_sentiment(texto1, method = "nrc" , language = "spanish")
+
+plot(text_sentiment, type = "l", main = "Constitucion", xlab = "Tiempo Narrativo", ylab = "Polaridad/Sentimiento")
+
+tibble(sentence = 1:length(text_sentiment), sentiment = rescale(text_sentiment)) %>% 
+  ggplot(aes(sentence, sentiment)) +
+  geom_smooth(se = F) +
+  theme_bw()
+
+
+
+
+

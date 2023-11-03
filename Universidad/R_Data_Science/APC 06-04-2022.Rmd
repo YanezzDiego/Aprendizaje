@@ -1,0 +1,149 @@
+---
+title: "ACP 08-09-2021"
+author: "Danilo Gómez Correa"
+date: "09-04-2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+#install.packages("")
+library(tidyverse)# Manipualcion
+library("FactoMineR") # Cluster y ACP
+library("factoextra") ## Cluster y ACP
+library(magrittr) ######
+library(readxl) # Lectura de xls
+library(skimr)# Analisis exporatorios
+```
+
+## Cargar datos
+
+```{r}
+EjemploEstudiantes <- read_excel("EjemploEstudiantes.xlsx")
+view(EjemploEstudiantes)
+
+df<-EjemploEstudiantes[,-1]
+
+row.names(df)<-EjemploEstudiantes$ID
+
+view(df)
+```
+
+## Resumen de datos.
+
+```{r}
+str(df)# Naturaleza del data set.
+summary(df)# Como la uniddad de medidad de cada variables es la misma no es necesario scalar o estandarizar, pero cuando las variables no tengan las mismas unidades de medida si es necesario estandarizar.
+df<-scale(df) # Escalar los datos
+boxplot(df)
+###EDA###
+library(skimr)
+skimr::skim(df)
+library(DataExplorer)
+DataExplorer::plot_correlation(df)
+```
+
+## Contruccion de matriz de correlacion
+
+```{r}
+
+MC<-df %>% cor() %>% round(.,2)
+MC<-round(cor(df),2)
+
+
+# Para saber si las variables estan correlacionadas KMO.
+#install.packages("psych")
+library(psych)
+#Si la prueba del KMO es mayor a 0.6 es puede realizar el ACP
+KMO(MC)  
+# Test de esfericidad de Barlett
+TT<-cortest.bartlett(MC)
+cat("Como el ",TT$p.value,"es inferior a alfa=0.05, entonces rechazo Ho")
+
+```
+
+## Valores y vectores Propios
+
+```{r}
+VV<-eigen(MC)# obtinen valores y vectores propios
+V<-VV$vectors
+class(VV$vectors)
+
+```
+
+
+```{r}
+
+```
+
+
+
+
+# Analisis de componetes principales
+
+
+```{r}
+acp <- PCA(df, graph =F )# PCA {FactoMineR}
+acp$eig
+fviz_eig(acp, addlabels = TRUE)#{factoextra}
+
+### Veamos si los individuos estan bien representados
+#BR<-as.data.frame(A)
+#BR<-scale(BR)
+#BR$Representacion<- (BR$Dim.1+BR$Dim.2)*100
+#plot(BR$Dim.1,BR$Dim.2)
+
+valores<- get_eigenvalue(acp)
+
+#Representacion numerica de las variables
+A <- acp$var$cos2
+class(A)
+BR<-as.data.frame(A)
+#BR<-scale(BR)
+BR$Representacion<- (BR$Dim.1+BR$Dim.2)*100
+BR[,c(1,2,6)]
+#Representacion numerica de las Ind
+
+B <- acp$ind$cos2
+BRI<-as.data.frame(B)
+#BR<-scale(BR)
+BRI$Representacion<- (BRI$Dim.1+BRI$Dim.2)*100
+Tabla <- BRI[,c(1,2,6)]
+arrange(Tabla, desc(Tabla$Representacion))
+```
+
+
+
+
+
+```{r}
+
+library("corrplot")
+##Correlaciones
+var <- get_pca_var(acp) # Obtines todos los calculos del ACP
+
+corrplot(var$cos2, is.corr = F) # Variable vs Dimensión
+
+fviz_pca_var(acp, col.var = "black") #Grafico de radial pra ver correlaciones
+
+fviz_pca_var(acp, col.var = "cos2",
+             gradient.cols = c("#00AFBB", "#E7B800", "#FC4E07"), 
+             repel = TRUE)
+
+
+fviz_pca_ind(acp, col.ind = "cos2", pointsize = "cos2",
+             gradient.cols = c("#00AFBB", "#E7B800", "#FC4E07"),
+             repel = TRUE) 
+
+
+var$contrib
+
+```
+
+
+
+
+

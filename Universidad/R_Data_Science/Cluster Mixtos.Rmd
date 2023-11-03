@@ -1,0 +1,157 @@
+---
+title: 'Cluster Mixtos'
+author: "Danilo Gómez Correa"
+date: "`r Sys.Date()`"
+output:
+  pdf_document:
+    toc: yes
+    toc_depth: '3'
+  html_document:
+    toc: yes
+    toc_float: yes
+    toc_collapsed: yes
+    toc_depth: 3
+    fig_caption: yes
+    number_sections: no
+    code_download: no
+    df_print: paged
+editor_options: 
+  markdown: 
+    wrap: 72
+---
+
+<div style="text-align: justify">
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Cluster Mixto
+
+Uno de los principales problemas con el agrupamiento jerárquico y de k-medias es que no pueden manejar datos **nominales**. La realidad es que la mayoría de los datos son mixtos o una combinación de datos de intervalo / razón y datos nominales / ordinales.
+
+Una de las muchas formas de abordar este problema es utilizando el *coeficiente de Gower*. Este coeficiente compara los casos por pares en el conjunto de datos y calcula una diferencia entre.
+
+
+
+
+Digamos que tenemos dos observaciones $x_i = (x_ {i1},..., x_ {ip})$ y $x_j = (x_ {j1},..., x_ {jp})$ queremos una medida de cuán similares (o diferentes) son entre sí. Si cada una de las entradas en estos dos vectores es cuantitativa (es decir, toma valores de números reales), entonces podemos usar medidas de distancia como una medida de disimilitud (por ejemplo, distancia euclidiana, distancia de Manhattan). Pero, ¿y si las $p$ variables que lo componen no son todas numéricas? ¿Qué pasa si algunos de ellos son categóricos o binarios?
+
+
+La distancia de *Gower* , introducida en Gower (1971), es una medida de similitud general que se puede utilizar en este contexto. Para cada característica $k = 1,..., p$, definimos una puntuación $s_ {ijk} \in [0,1]$. Si $x_i$ y $x_j$ están cerca entre sí a lo largo de la característica $k$, entonces la puntuación $s_ {ijk}$ es cercana a 1. Por el contrario, si están muy separados a lo largo de la característica, $k$ la puntuación $s_ {ijk}$ es cercana a 0.
+
+
+La forma en que $s_ {ijk}$ se calcula la puntuación depende del tipo de característica $k$. También $\delta_ {ijk}$ se calcula una cantidad : si $x_i$ y $x_j$ se puede comparar a lo largo de la característica $k$, entonces $\delta_ {ijk}$ = 1. Si $x_i$ y $x_j$ no se pueden comparar a lo largo de la característica $k$ (debido, por ejemplo, a valores perdidos), 
+$\delta_{ijk}$ se establece en cero. La distancia de Gower es solo el promedio de las puntuaciones (conocidas):
+
+$$ S_ {ij} = \dfrac {\sum_ {k = 1} ^ p s_ {ijk} \delta_ {ijk}} {
+\sum_{k = 1} ^ p \delta_ {ijk}}.  $$
+
+Ahora, hablemos sobre cómo calcular las puntuaciones para cada tipo de variable. Gower describe 3 tipos diferentes de variables:
+
+
+
+- **Variables cuantitativas** (variables numéricas): $s_ {ijk} = 1 - | x_ {ik} - x_ {jk} |  / R_k$ donde $R_k$ es el rango de la característica $k$, ya sea en la población o en la muestra.
+
+- **Las variables cualitativas** (variables categóricas) : 
+$s_{ijk} = 1$ , $\{x_ {ik} = x_ {jk} \}$ .
+
+- **Variables dicotómicas**: esto es algo de lo que no hablamos mucho hoy en día. Una variable dicotómica es aquella en la que la característica está presente o ausente, y “cuya ausencia en ambos de un par de individuos no se toma como una coincidencia. Para tales variables,$s_{ijk}$ y $\delta_ {ijk}$ están determinadas por la siguiente tabla 
+
+
+![](gower.PNG)
+
+Finalmente, ¿por qué se llama distancia a esto? Si $x_i$ y $x_j$ tienen similitud $S_ {ij}$, entonces podemos pensar en la distancia entre ellos como
+$\sqrt {1 - S_ {ij}}$. Para que esta sea una distancia válida, debe satisfacer la desigualdad del triángulo, es decir, para 3 observaciones cualesquiera $x_i$, $x_j$ y $x_\ell$ sus similitudes deben satisfacer
+
+ $$\sqrt {1 - S_ {ij}} + \sqrt {1 - S_ {j\ell}} \geq \sqrt {1 - S_ {i\ell}}$$  
+
+La tabla demuestra que si no hay valores perdidos (es decir, $\delta_ {ijk} = 1$ para todos $I$, $j$ y $k$), entonces la distancia definida anteriormente satisface la desigualdad del triángulo.
+
+## Calcular distancias para datos mixtos
+
+La función `daisy ()` [paquete de clúster] proporciona una solución (métrica de Gower) para poniendo la matriz de distancia, en la situación en la que los datos contienen datos no numéricos columnas.
+
+El siguiente código `R` aplica la función `daisy()` en datos de floores que contienen factor, variables ordenadas y numéricas:
+
+
+
+Ejemplo:
+
+```{r}
+library(factoextra)
+library(cluster)
+# Load data
+data(flower)
+head(flower, 3)
+str(flower)
+
+```
+
+
+```{r}
+dd <- daisy(flower,metric = "gower")# daisy calcula la distancia de gower.
+class(dd)
+
+
+
+round(as.matrix(dd), 2)
+heatmap(as.matrix(dd))
+              
+#ddd<-as.dist(dd)
+#fviz_dist(ddd)
+```
+
+
+
+
+Ejemplo:
+
+
+1. Se Cargan los paquetes y datos:
+```{r}
+library(cluster)#este paquete entrega el comado de daisy
+library(Ecdat)
+library(compareGroups)
+data("MedExp")
+str(MedExp)
+df2<-MedExp
+```
+
+Puede ver claramente que nuestros datos están mezclados con variables numéricas y factoriales. Por lo tanto, lo primero que debemos hacer es calcular el coeficiente de Gower para el conjunto de datos. Esto se hace con la función `daisy` del paquete `cluster`.
+
+
+2. Se calcula la matriz de distancias
+```{r}
+disMat<-daisy(df2,metric = "gower")
+#heatmap(as.matrix(disMat))
+#ddd<-as.dist(dd)
+#fviz_dist(ddd)
+
+```
+
+
+
+
+```{r}
+set.seed(123)
+
+mixedClusters<-kmeans(disMat, centers=4)
+
+
+MedExp$cluster<-mixedClusters$cluster
+
+View(MedExp)
+
+group<-compareGroups(cluster~.,data=MedExp)
+
+clustab<-createTable(group)
+
+clustab
+
+
+```
+
+
+
+<div>

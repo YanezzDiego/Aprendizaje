@@ -1,0 +1,65 @@
+---
+title: "Diego_Yañez_Certamen2"
+author: "Diego Yáñez"
+date: "03-08-2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r cars}
+summary(cars)
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+plot(pressure)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+```{r}
+library(readxl)
+library(readr)
+library(tidyverse)
+library(openxlsx)
+
+#Cargamos la base de datos
+bd<- read.csv2("Base_Estudio.csv",na.strings = "")
+view(bd)
+
+summary(bd)
+
+#Eliminación de registros duplicados (si existiesen)
+bd<- unique(bd)
+
+
+#Para saber si se tienen variables altamente correlativas (mayor a 0.8), crearemos un subset de nuestra base de datos que contenga todos los registros que no contiene datos NA. "bd2" ayudará luego en rapid miner.
+
+bd2<- na.omit(bd)
+View(bd2)
+
+#Para realizar la imputación de nuestros datos, crearemos una muestra con 150 registros (completos) de nuestros datos.
+
+  muestra150<- sample_n(na.omit(bd),150,replace = FALSE)
+ 
+
+#Exportamos a formato xlsx
+setwd("C:\Users\Diego\Documents\R\Proyectos\Mineria de Datos 2021")
+
+
+write.xlsx(bd,"Base_Estudio_Rapid_Miner.xlsx")
+write.xlsx(bd2,"Registros_Completos.xlsx")
+write.xlsx(muestra150,"150datos.xlsx")
+```
+

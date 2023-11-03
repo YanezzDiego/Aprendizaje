@@ -1,0 +1,249 @@
+---
+title: "Untitled"
+author: "Danilo Gomez Correa"
+date: "22/10/2020"
+output:
+  html_document: default
+  pdf_document: default
+---
+
+
+```{r}
+library("FactoMineR") 
+library("factoextra")
+library(tidyverse)
+library(magrittr)
+library(readxl)
+library (corrplot)
+library(Matrix)
+library(DataExplorer)
+```
+
+### Exploracion de Datos
+ La base de datos corresponde a las proteinas consumidas por distintos paises considerando distintos alimentos.
+```{r}
+protein <- read_csv("protein.csv")
+dt <- protein
+df<-protein[,-1]
+row.names(df)<-dt$Country
+View(df)
+
+
+
+DataExplorer::plot_str(protein)
+DataExplorer::plot_missing(df) 
+class(df)
+```
+
+
+###MATRIZ DE CORRELACIONES
+```{r}
+cor(as.matrix(df)) #matriz correlacions
+cor(as.matrix(df)) %>% corrplot() #corrplot de correlaciones
+
+
+
+correlacion<-round(cor(df), 2) 
+corrplot(correlacion, method="number", type="upper") #corrplot numerico de correlaciones 
+eigen(cor(df)) #Valores y vecores propios
+```
+###ANALISIS DESCRIPTIVO DE LAS VARIABLES
+```{r}
+str(df)
+
+summary(df)
+boxplot(df)
+pairs(df)
+```
+###ANALISIS DE COMPONENTES PRINCIPALES
+```{r}
+library(psych)
+psych::KMO(correlacion)
+acp<-df %>% scale();acp
+acp1 = prcomp(acp);acp1 #desviacion estandar de cada valor propio y cjto de componentes principales
+summary(acp1) #proporcion de varianza explicada por cada uno de los componentes.
+#criterio de selección de componentes
+#desv_stand = acp[[1]]
+#desv_stand
+#varianza = desv_stand^2
+#varianza
+
+biplot(acp1)# Grafico muestra inviduduos y variables
+
+```
+
+
+
+```{r}
+df1<-df %>% scale() 
+
+class(df)
+res.pca<-PCA(df1,graph = FALSE) 
+eig.val<-get_eigenvalue(res.pca) 
+
+res.pca %>% fviz_eig(.,addlabels = TRUE)
+
+var<-get_pca_var(res.pca)
+
+corrplot(var$cos2, is.corr=FALSE)
+
+fviz_pca_var(res.pca,col.var = "black")
+
+fviz_pca_var(res.pca, col.var = "cos2",
+             gradient.cols = c("#00AFBB", "#E7B800", "#FC4E07"), 
+             repel = TRUE) 
+
+
+fviz_pca_ind(res.pca, col.ind = "cos2", pointsize = "cos2",
+             gradient.cols = c("#00AFBB", "#E7B800", "#FC4E07"),
+             repel = TRUE) 
+
+gc<- prcomp(df1, scale = TRUE, rank = 2) 
+biplot(gc, scale = 0)
+```
+###CLUSTER
+```{r}
+#Metodo distancia euclideana
+MD<-df %>% dist(.,method = "euclidean") %>% as.matrix()
+
+#matriz de distancia
+round(as.matrix(MD),2) #redondear valores 
+
+#mapa de calor
+heatmap(MD)
+```
+#Cluster Jerarquico
+```{r}
+#Metodo Ward
+hc<-df %>% scale %>% dist(method ="euclidean") %>% hclust(method = "ward.D")
+
+
+fviz_dend(x=hc, k=3,cex = 0.8) + geom_hline(yintercept = 8.7,linetype = "dashed")
+
+```
+
+#Cluster NO Jerarquico
+```{r}
+set.seed(2021)# Semilla
+df<-scale(df)
+df
+km_cluster<-kmeans(x=df,centers = 3,nstart = 50)
+
+km_cluster$cluster
+
+fviz_cluster(object=km_cluster,data = df,show.clust.cent = TRUE,ellipse.type = "euclid",star.plot=TRUE,repel = TRUE)+
+  theme_bw()+theme(legend.position = "none")
+```
+
+### Plot 3d PCA
+
+```{r}
+df2<-df
+
+CC<-as.matrix(km_cluster$cluster)
+
+df3<-cbind(df2,CC)
+view(df3)
+
+
+library(pca3d)
+dim(df3)
+acp<-df3[,-10] %>% scale();acp
+acp2 = prcomp(acp) #desviacion estandar de cada valor propio y cjto de 
+
+df3[,10]
+
+pca3d(acp2,group =df3[,10], show.ellipses = T )
+
+df33<-as.data.frame(df3)
+
+Cluster1<-dplyr::filter(df33,V10==1) %>% select(V10)
+Cluster2<-dplyr::filter(df33,V10==2)%>% select(V10)
+Cluster3<-dplyr::filter(df33,V10==3)%>% select(V10)
+
+```
+
+
+
+
+
+###MAPA NO VISTO EN CLASES
+
+```{r}
+#OPCION 1
+library(cluster)
+
+clara_clusters <- clara(x = df, k = 3, metric = "manhattan", stand = TRUE,samples = 50, pamLike = TRUE)
+
+
+clara_clusters
+fviz_cluster(object = clara_clusters, ellipse.type = "t", geom = "point",
+             pointsize = 2.5) +
+  theme_bw() +
+  labs(title = "Resultados clustering CLARA") +
+  theme(legend.position = "none")
+```
+
+
+
+
+
+```{r}
+#OPCION 2
+fviz_cluster(object = list(data=df, cluster=cutree(hc, k=3)),
+             ellipse.type = "euclid", repel = TRUE, show.clust.cent = FALSE,
+             labelsize = 8)  +
+  labs(title = "Hierarchical clustering + Proyeccion PCA",
+       subtitle = "Distancia euclidea, Lincage complete, K=3") +
+  theme_bw() +
+  theme(legend.position = "bottom")
+#convex
+```
+```{r}
+#NUMERO OPTIMOS DE CLUSTER
+library(factoextra)
+fviz_nbclust(x = df, FUNcluster = kmeans, method = "wss", k.max = 10) +
+  labs(title = "Numero Optimo de clusters")
+
+```
+
+
+```{r}
+#OPCION 3
+
+#Representacion b?sica del dendrograma
+
+set.seed(2020)
+fviz_dend(x = hc,
+          k = 4,
+          k_colors = c("#2E9FDF", "#00AFBB", "#E7B800", "#FC4E07"),
+          color_labels_by_k = TRUE,
+          rect = TRUE,
+          rect_border = c("#2E9FDF", "#00AFBB", "#E7B800", "#FC4E07"),
+          rect_fill = TRUE,
+          cex = 0.8,
+          main = "Dendrograma - ward",
+          xlab = "observaciones",
+          ylab = "distancia",
+          sub = "")
+
+set.seed(5665)
+fviz_dend(x = hc,
+          k = 4,
+          k_colors = c("#2E9FDF", "#00AFBB", "#E7B800", "#FC4E07"),
+          color_labels_by_k = TRUE,
+          cex = 0.8,
+          type = "circular")
+
+
+library("igraph")
+set.seed(2020)
+fviz_dend(x = hc,
+          k = 4,
+          k_colors = c("#2E9FDF", "#00AFBB", "#E7B800", "#FC4E07"),
+          color_labels_by_k = TRUE,
+          cex = 0.8,
+          type = "phylogenic",
+          repel = TRUE)
+```
+

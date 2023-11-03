@@ -1,0 +1,234 @@
+---
+title: "Analisis de Sentimiento Isaias"
+author: "Andrés Guiñazú"
+date: "15-12-2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r, echo=FALSE}
+library(tm)
+library(SnowballC)
+library(wordcloud)
+library(ggplot2)
+library(dplyr)
+library(readr)
+library(tidytext)
+library(dplyr)
+library(tidyverse)
+library(textdata)
+library(reshape2)
+library(syuzhet)
+```
+
+# Comprension del problema
+
+1. Objetivo General
+  + Analizar por medio de Mineria de Texto los patrones subyacentes en el texto de Isaias.
+  
+2. Objetivos Especificos
+  + Analizar texto de Isaias, para hacer una limpieza respectiva de este.
+  + Generar tokenizacion
+  + Aplicacion Analisis de Sentimiento
+  
+3. Plan de proyecto
+  + Analisar la base de datos.
+  + Cargar texto a R.
+  + Generar una exploracion de los datos.
+  + Realizar tokenizacion.
+  + Aplicar algoritmo de analisis de sentimiento.
+  + Generar graficos de visualizacion.
+  
+
+El consenso de los expertos que dominó la mayor parte del siglo XX vio tres colecciones separadas de oráculos en el libro de Isaías. Un esquema típico basado en este entendimiento del libro considera su estructura fundamental en términos de la identificación de los personajes históricos que podrían haber sido sus autores:
+
++ 1–39 – Proto-Isaías, que contiene las palabras del Isaías original;
++ 40–55 – Deutero-Isaías, la obra de un autor anónimo del Exilio;
++ 56–66 – Trito-Isaías, una antología de unos doce pasajes.
+
+A continuacion se proocedera a analizar el texto completo del libro de Isaias.
+
+```{r}
+text<- read_lines("Texto Completo.txt")
+str(text)
+```
+
+# Creacion de parrafos
+
+Creamos un vector llamado diez con 10 repeticiones (rep) de los números desde 1 hasta el número de renglones en el documento, dividido entre 10 (length(nov_raw)/10.
+
+Con esto, tendremos un vector con diez 1, luego diez 2, etc, hasta llegar al número máximo de grupos de diez posibles en función del número de renglones de nuestro documento.
+
+Usaremos estos números para hacer grupos de diez renglones consecutivos.
+
+```{r}
+diez <- rep(1:ceiling(length(text)/10), each = 10)
+diez <- diez[1:length(text)]
+text <- cbind(diez, text) %>% data.frame() # Así tenemos una columna con los renglones de texto y otra con un número que identifica a qué grupo de diez renglones pertenece.Además, convertimos a data.frame
+
+text <- aggregate(formula = text ~ diez,
+                      data = text,
+                      FUN = paste,
+                      collapse = " ") #Usamos aggregate para concatenar los renglones
+text <- text %>% select(text) %>% as.matrix #Aprovechamos para transformar text en una matrix, para que facilitar los pasos siguientes.
+dim(text)
+text[10]
+```
+
+# Limpieza del texto
+
+```{r}
+text <- gsub("[[:cntrl:]]", " ", text) #quitamos saltos de linea y tabulaciones
+text <- removeNumbers(text) #remueve numeros
+text <- removePunctuation(text) #remueve la puntuacion
+text <- tolower(text) #transforma el texto en minuscula
+text <- removeWords(text, words = stopwords("spanish")) #elimina palabras vacias, es decir, aquellas con poco valor para el análisis
+text <- stripWhitespace(text) #quitamos espacios en blanco sobrantes
+```
+
+# Tokenizacion
+
+```{r}
+text_df<- tibble(line= 1:260, text = text)
+text_token<- unnest_tokens(tbl=text_df,output = "Palabra",input =  "text", token = "words")
+dim(text_token)
+```
+
+# Frecuencia de palabras
+Usando ggplot fue posible realizar un grafico de frecuencia correspondiente al libro de isaias donde:
+
+1. count(): Contar las palabras de mayor a menor.
+2. filter(): Filtrar las 50 palabras que más se repiten.
+3. mutate(): Para modificar una columna.
+4. reorder(): Ordena una variable según el valor de otra variable (generalmente numérica).
+5. geom_text(): Asigna una etiqueta a los datos.
+6. xlab(): Elimina el nombre del eje x (así los valores del eje “x” ocupan un mayor espacio en el grafico).
+7. coord_flip(): Invierte los ejes (sirve cuando el nombre de los valores son muy largos y resultan ilegibles).
+8. theme_minimal(): Aplica un tipo de fondo al gráfico.
+
+
+```{r}
+count(text_token,
+      Palabra,
+      sort = TRUE) #Ordena de mayor a menor
+```
+
+Se observan palabras frecuentes que no sirven para el análisis, se pueden remover con la función filter().
+
+```{r}
+text_token <- filter(text_token, Palabra!="oh" & Palabra!="aquel" & Palabra!="entonces" & Palabra!="aquí")
+```
+
+```{r}
+text_token %>%
+  count(Palabra, sort = TRUE) %>%
+  filter(n > 50) %>%
+  mutate(word = reorder(Palabra, n)) %>%
+  ggplot(aes(word, n)) +
+  geom_text(aes(label=n), hjust= -0.2) +
+  geom_col() +
+  xlab("Palabras mas frecuentes") +
+  coord_flip()+
+  theme_minimal()
+```
+
+# Analisis de sentimiento
+
+El paquete tidytext contiene varios léxicos, algunos de estos son bing, nrc y afinn.
+
+1. bing: Este léxico clasifica las palabras según el sentimiento, puede ser negativo o positivo.
+
+2. nrc: Este léxico clasifica las palabras segun el sentimiento (positivo y negativo) y la emoción (anticipation, disgust, fear, joy, sadness, surprise y trust).
+
+3. afinn: Este lexico asigna palabras con una puntuacion que va de -5 a 5, con puntuaciones negativas que indican sentimiento negativo y puntuaciones positivas que indican sentimiento positivo
+
+En este caso usaremos el lexico afinn para el analisis de sentimiento.
+
+```{r}
+download.file("https://raw.githubusercontent.com/jboscomendoza/rpubs/master/sentimientos_afinn/lexico_afinn.en.es.csv",
+              "lexico_afinn.en.es.csv")
+afinn<- read.csv("lexico_afinn.en.es.csv", stringsAsFactors = F, fileEncoding = "latin1") %>% tbl_df()
+```
+
+Al tener el conjunto de datos de forma ordenada (una palabra por fila), se puede asignar el sentimiento a cada una de las palabras mediante la función inner_join().
+
+```{r}
+text_afinn <- inner_join(afinn, text_token, by = "Palabra") %>%
+  mutate(Tipo = ifelse(Puntuacion > 0, "Positiva", "Negativa"))
+```
+
+# Visualizacion Analisis de sentimiento 
+
+```{r}
+text_afinn %>%
+  count(Palabra)
+
+map(c("Positiva", "Negativa"), function(sentimiento) {
+  text_afinn %>%
+    filter(Tipo ==  sentimiento) %>%
+    count(Palabra, sort = T) %>%
+    top_n(n = 10, wt = n) %>%
+    ggplot() +
+    aes(Palabra, n, fill = Palabra) +
+    geom_col() +
+    scale_y_continuous(expand = c(0, 0)) +
+    coord_flip() +
+    labs(title = sentimiento)
+})
+```
+
+# Tiempo Narrativo
+
+```{r}
+text_sentiment<- get_sentiment(text, method = "nrc", language = "spanish")
+
+plot(text_sentiment, 
+     type = "l", 
+     main = "Isaias", 
+     xlab = "Tiempo Narrativo",
+     ylab = "Polaridad/Sentimiento")
+
+tibble(sentence = 1:length(text_sentiment), 
+       sentiment = rescale(text_sentiment)) %>% 
+  ggplot(aes(sentence, sentiment)) +
+  geom_smooth(se = FALSE) +
+  theme_bw()
+```
+
+
+En términos del arco emocional pareciera una historia tipo Cenicienta, que sube, luego baja y finalmente vuelve a subir.
+
+
+
+# Nube de Palabras
+
+```{r}
+text_token %>%
+  count(Palabra) %>%
+  with(wordcloud(words=Palabra,
+                 freq=n,
+                 max.words = 100,
+                 scale = c(3,1),
+                 rot.per = 0.3,
+                 random.order = FALSE,
+                 colors=brewer.pal(6,"Dark2")))
+```
+
+# Conclusiones
+
+En este informe se procuro enforcarse en cuales palabras han sido influyentes. Ademas, que sentimiento han sido predominantes del libro de Isaias y por ultimo como estos sentimientos van cambiando a travez del tiempo.
+
+Tambien se puede decir que al dividir la cadena de texto en palabras individuales se pierde el contexto de la oración, por lo que se puede cometer sesgo en el análisis, por ende. no se puede diferenciar el doble sentido.
+
+Por ultimo al visuliazar los graficos se tiene que el patron que se encuentra en el texto de isaias parte con un sentimiento positivo que hace referencia a la llegada de todas las naciones a jerusalen, luego decae a un sentimiento negativo el cual se refiere al castigo y a la limpieza del mal del pueblo de jerusalen y por ultimo el texto de isaias termina con un sentiminto positivo el cual se refiere a la llegada del mesias al pueblo el cual entregara justicia a este.
+
+
+
+
+
+
+
+

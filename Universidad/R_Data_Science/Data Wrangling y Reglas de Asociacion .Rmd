@@ -1,0 +1,353 @@
+---
+output:
+  word_document: default
+  html_document: default
+---
+#INFORME DATA WRANGLING Y REGLAS DE ASOCIACION
+##PROFESOR DANILO GOMEZ CORREA
+
+#MARCO TERICO
+
+El analisis de datos se ha convertido en un negocio cotidiano y los avances en gestión de datos abren nuevas oportunidades. Sin embargo, transformar y ensamblar datos puede ser una tarea tediosa. A menudo se dice que la limpieza de datos es una parte cr?tica que consume grandes cantidades de tiempo y recursos. La siguiente t?cnica expuesta comprende limpieza y otros aspectos detallados a continuaci?n.
+
+#DATA WRANGLING (DOMAR DATOS)
+
+Data Wrangling es el proceso por el cual los datos requeridos en un proceso en particular son identificados, extra?dos, limpiados e integrados con el fin de producir un conjunto de datos que sea adecuado para su exploraci?n y an?lisis. Este m?todo toma en consideraci?n aspectos como la calidad de los datos, fusi?n de diferentes fuentes, procesos reproducibles y gesti?n de la procedencia de datos. 
+
+Data wrangling posee otras denominaciones como "data munging" o "janitorial work".
+Recolectar datos de fuentes medianamente estructurados en una dif?cil misi?n, considerando que lo ideal es tener una visualizaci?n sencilla del dataset, existen bases de datos que si bien se exponen de cierta forma desordenadas con software adecuados se logra una correcta visualizaci?n.
+
+Las transformaciones de datos se aplican t?picamente a entidades distintas (por ejemplo, campos, filas, columnas, valores de datos, etc.) dentro de un conjunto de datos, y podr?an incluir acciones tales como extracciones, an?lisis, uni?n, estandarizaci?n, aumento, limpieza, consolidaci?n y filtrado para crear salidas deseadas que pueden aprovecharse en sentido descendente.
+
+Los destinatarios podr?an ser personas, tales como cient?ficos de datos que investigar?n los datos m?s a fondo, usuarios comerciales que consumir?n los datos directamente en informes o sistemas que procesar?n los datos y los escribir?n en objetivos tales como almacenes de datos.
+
+Dependiendo de la cantidad y el formato de los datos de entrada, la "disputa de datos" se ha realizado tradicionalmente de forma manual, por ejemplo, a trav?s de hojas de c?lculo como Excel o mediante scripts escritos a mano en lenguajes como Python, SQL y R , este ?ltimo es un lenguaje que a menudo se utiliza en la extracci?n de datos y el an?lisis de datos estad?sticos, ahora tambi?n se utiliza  para este f?n.
+
+En palabras sencillas por ejemplo si se desea visualizar el n?merode clientes por ciudad, debe asegurarse de que haya s?lo una fila por ciudad antes de la visualizaci?n de datos. Si tiene dos filas que representanla misma ciudad, esto podr?a generar resultados err?neos.
+
+Se pueden aplicar t?cnicas de data wrangling en R ya que se han creado paquetes para la contrastaci?n y visualizaci?n de datos, son llamados tidyr y dplyr. Se posee una premisa clave que es "poner variables en las columnas y observaciones en las filas". 
+
+#Paquete Tidyr 
+Al utilizar este paquete se requiere identificar cuales son las variables y cuales son las observaciones. En ocasiones se encuentra una variable en m?ltiples columnas, una observaci?n en diversas filas ? m?s de una variable en una celda. Para remediar estas situaciones se aplica:
+*Comando Gather*: Esta funci?n toma m?ltiples columnas y las une en pares clave-valor. Esto permite resolver las situaciones en que tenemos columnas que realmente no representan variables, si no valores de una variable.
+*Comando Spread*: La funci?n spread es usada cuando tenemos una observaci?n dispersa en m?ltiples filas.La columna que contiene los nombres de las variables corresponde al argumento "key", mientras que la columna que contiene el valor de la variable es "value". Hace lo opuesto a la funci?n gather por lo tanto son complementarias.
+*Comando Separate*: Esta funci?n lo que hace dividir una columna en m?ltiples columnas, tomando como separador alg?n s?mbolo. Por defecto utiliza un separador no alfa-num?rico
+*Comando Unite*: Complementaria a la funci?n separate, lo que hace es tomar m?ltiples columnas y las colapsa en una sola columna.
+
+#Paquete Dplyr
+
+Este paquete no provee ninguna funcionalidad que no pueda ser realizada con las funciones del paquete base, sino que su valor agregado est? en la simplicidad que provee para realizar tales operaciones. A su vez, dado que el paquete est? escrito en C++, las funciones que provee permiten hacer operaciones m?s r?pido que su equivalente del paquete base. Algunas funciones utilizadas:
+*Select*: Devuelve s?lo las columnas indicadas en un dataframe.
+*Filter*: Permite filtrar filas de una data frame seg?n una expresi?n l?gica.
+*Arrange*: Ordena las filas de un dataframe en funci?n de los valores de una o m?s columnas.
+*Rename*: Permite cambiar el nombre de una columna.
+*Mutate*: Permite agregar una nueva columna o transformar una existente.
+*Summarize*: Permite realizar res?menes estad?sticos de variables en un dataframe.
+
+```{r}
+#install.packages("tidyverse")
+library(tidyverse)
+```
+##Paquete Arules y ArulesViz
+
+El paquete Arules implementa los algoritmos Apriori y Eclat para la identificaci?n de itemsets frecuentes y la creaci?n de reglas de asociaci?n a trav?s de las funciones apriori() y eclat().
+Tanto apriori() como eclat() reciben como argumento un objeto "transaction" con los datos de las transacciones, un argumento "parameter" que determina las caracter?sticas de los itemsets o reglas generadas y un argumento control que determina el comportamiento del algoritmo.
+
+Funciones que ofrece arules:
+
+*Summary()*: muestra un resumen de los resultados.
+*Inspect()*: muestra los resultados.
+*Lenght()*: número de elementos (reglas o itemsets) almacenados.
+*Items()*: extrae los items que forman un itemset o a una regla.
+*Sort()*: ordena los resultados.
+*Subset()*: filtrado de los resultados.
+
+El paquete ArulesViz permite las visualizaciones de los gr?ficos que se generan a partir de las reglas de asociaci?n.
+```{r}
+library(arules)
+library(arulesViz)
+library(readxl)
+```
+
+##Base de datos.
+Se ha generado una base de datos en donde se muestran 50 paises a los que han volado 1000 usuarios desde Chile. Los datos son del tipo 0 y 1, indicando con un 1 al pais que ha viajado y con un 0 al pais en donde no.
+
+```{r}
+Basedatos_vuelos_desde_Chile_1 <- read_excel("Basedatos vuelos desde Chile 1.xlsx")
+
+datos<-Basedatos_vuelos_desde_Chile_1
+datos
+class(datos) # clase del data set
+dim(datos) # Dimension
+nrow(datos) # Cantidad de filas 
+ncol(datos) #Cantidad de colomnas
+```
+
+##Transformar las columnas en filas.
+Se transformanen las 50 columnas con los nombres de los paises en filas.
+```{r}
+library(tidyverse)
+datos<-gather(data = datos,key ="pais", value = "viaja", 2:51)
+class(datos)
+dim(datos)
+datos
+```
+
+
+##Ordenar los datos en la columna ID de menor a mayor 
+Ordena todos los ID=1 primero, luego los ID=2, etc.
+```{r}
+datos<-arrange(datos, Id) 
+datos
+view(datos)
+dim(datos)
+```
+##Filtrar filas.
+El comando filter acta en la columna viaja, mostrando los valores igual a 1, que corresponde que el usuario si viaja a dicho pa?s.
+```{r}
+datos<-filter(datos, viaja == 1) 
+dim(datos)
+view(datos)
+```
+
+
+
+##Seleccionar columnas.
+El comanto select da a conocer s?lo las columnas que se desea mostrar, en este caso ID y Pais.
+```{r}
+datos<-select(datos,Id,pais) 
+view(datos)
+```
+
+
+
+
+
+
+
+
+El resultado anterior corresponde al data frame que se utilizar para aplicar reglas de asociación.
+
+Esta estructura es llamada *tabla larga o single* que está compuesta por dos columnas, una con la identificación o id y otra con el item correspondiente. Todos los items que pertenecen a un mismo id son llamados una *transacción* ya que ocurren de forma conjunta. 
+
+Para este caso de estudio, destinos de vuelo, cada transacción está formada por todos los destinos a los que ha viajado un usuario.
+
+##Convertir el data frame en una lista.
+La lista sirve para mostrar los items por cual se compone cada transacción.
+```{r}
+  datos_split<- split(x = datos$pais, f = datos$Id)#list
+```
+##La lista se convierte en transacciones.
+```{r}
+transacciones<-as(datos_split, Class = "transactions")
+transacciones
+```
+
+```{r}
+tamanios<-size(transacciones)
+summary(tamanios)
+```
+
+
+Para identificar cuales son los items mas frecuentes (los que tienen mayor soporte) dentro del conjunto de todas las transacciones.Con la función itemFrequency() se puede extraer esta información de un objeto tipo transactions (transacci?n).
+
+
+##Items frecuentes, frecuencia relativa.
+Por "frecuencia" se hace referencia al soporte de cada item, que es la fracci?n de transacciones que contienen dicho item respecto al total de todas las transacciones.
+```{r}
+frecuencia_paises_relativa<-itemFrequency(x = transacciones, type = "relative")
+frecuencia_paises_relativa
+```
+
+
+
+
+```{r}
+frecuencia_paises_relativa<-sort(frecuencia_paises_relativa, decreasing = T)
+frecuencia_paises_relativa
+```
+
+
+```{r}
+frecuencia_paises_relativa<-head(frecuencia_paises_relativa,5)
+frecuencia_paises_relativa
+```
+
+
+#Items frecuentes, frecuencia absoluta.
+Si se indica el argumento type = "absolute", la funci?n itemFrequency() devuelve el n?mero de transacciones en las que aparece cada item.
+
+```{r}
+frecuencia_paises_absoluta<-itemFrequency(x = transacciones, type = "absolute")
+frecuencia_paises_absoluta<-sort(frecuencia_paises_absoluta, decreasing = F)
+frecuencia_paises_absoluta<-head(frecuencia_paises_absoluta,5)
+frecuencia_paises_absoluta
+```
+
+
+El listado anterior muestra los destinos más frecuentes que salen desde Chile: Brasil, Estados Unidos, Argentina, Peru, España, Holanda, Lituania, Mexico, Colombia, Inglaterra, Francia y Uruguay.
+
+Es muy importante estudiar como se distribuye el soporte de los items individuales en un conjunto de transacciones antes identificar itemsets frecuentes o crear reglas de asociación, ya que, dependiendo del caso, tendrá sentido emplear un límite de soporte u otro. Por lo general, cuando el n?mero de posibles items es muy grande (varios miles) pr?cticamente todos los art?culos son raros, por lo que los soportes son muy bajos. 
+
+##Itemsets frecuentes.
+
+Con la función apriori() se puede aplicar el algoritmo Apriori a un objeto de tipo transactions y extraer tanto itemsets frecuentes como reglas de asociaci?n que superen un determinado soporte y confianza.
+
+Se procede a extraer aquellos itemsets, incluidos los formados por un ?nico item, que hayan sido elegidos (destinos) al menos 60 veces. 
+```{r}
+soporte<-60/dim(transacciones)[1]
+
+itemsets<-apriori(data = transacciones, list(support = soporte, minlen=1, maxlen=21, target = "frequent itemset"))
+
+summary(itemsets)
+```
+Se han encontrado un total de 3462 itemsets frecuentes que superan el soporte mínimo de 0.06, la mayoría de ellos (1361) formados por cuatro items. 
+
+##Itemsets con mayor soporte.
+En el siguiente listado se muestran los 20 itemsets con mayor soporte (de mayor a menor).
+```{r}
+top_20<- sort(itemsets, by = "support", decreasing = TRUE)[1:20]
+inspect(top_20)
+```
+##Gráfico con los 20 itemsets con mayor soporte.
+
+##Itemsets formados por m?s de un item.
+Si se quieren excluir del an?lisis los itemsets formados ?nicamente por un solo item, se puede, o bien aplicar de nuevo la funci?n apriori() especificando minlen = 2, o filtrar los resultados con la funci?n size().
+A continuaci?n se mostrar?n los primeros 20 itemsets formados por m?s de un item:
+```{r}
+inspect(sort(itemsets[size(itemsets) > 1], decreasing = TRUE)[1:20])
+```
+##Filtrado de itemsets
+Una vez que los itemsets frecuentes han sido identificados mediante el algoritmo Apripori, pueden ser filtrados con la funci?n subset(). Esta funci?n recibe dos argumentos: un objeto itemset o rules y una condici?n l?gica que tienen que cumplir las reglas/itemsets para ser seleccionados. 
+&: AND
+%in%: contiene cualquier de los siguientes elementos
+%ain%: contiene todos de los siguientes elementos
+%pin%: contiene parcialmente los siguientes elementos
+
+Se filtran aquellos primeros 40 itemsets que contienen "Brasil":
+```{r}
+itemsets_filtro<-subset(itemsets, subset = items %in% "Brasil")
+inspect(itemsets_filtro[1:40])
+```
+Se filtran aquellos primeros 40 itemsets que contienen "Brasil" y "Francia":
+
+```{r}
+itemsets_filtro<-subset(itemsets, subset = items %ain% c("Brasil", "Francia"))
+inspect(itemsets_filtro[1:40])
+```
+
+#REGLAS DE ASOCIACION
+Dentro de las t?cnicas utilizadas en miner?a de datos se encuentra la extracci?n de reglas de asociaci?n, la cual permite conocer la relaci?n entre los diferentes atributos de una base de datos. Las reglas que se logran obtener evidencian patrones de comportamiento entre los datos en funci?n de la aparici?n conjunta de valores de dos o m?s atributos.
+
+Las reglas de asociaci?n han sido el objetivo de muchos trabajos de investigaci?n desde que Agrawal et al. propusieran el algoritmo de aprendizaje Apriori y su utilizaci?n en grandes bases de datos. Haciendo uso de su notaci?n, se puede definir una regla de asociaci?n como una implicaci?n de la forma $$(X\Longrightarrow\ Y)$$, donde X se denomina antecedente (lhs, lado izquierdo de la regla ) e Y consecuente (lado derecho de la regla). Tanto X como Y est?n formados por elementos pertenecientes a una tabla de transacciones. 
+
+*Transacci?n*: hace referencia a cada grupo de items que est?n asociados de alguna forma.
+*Item*: eventos o elementos que forman parte de una transacci?n.
+*Itemset*: conjunto de items.
+
+Las tablas de transacciones constan de un n?mero indeterminado de registros que contienen diferentes secuencias de valores de los atributos que definen un registro. A su vez los atributos que forman cada uno de los registros dependen del campo de aplicaci?n.
+
+Generalmente las asociaciones encontradas dan un gran n?mero de reglas. Para seleccionar las reglas m?s representativas el proceso debe continuar con una evaluaci?n de las 
+asociaciones. 
+
+Las medidas m?s utilizadas para estimar la validez de una regla son las siguientes:
+
+**Soporte (Support)**: El soporte del item o itemset X es el n?mero de transacciones que contienen X dividido entre el total de transacciones.
+
+$$S(X\Longrightarrow\ Y)=S(X\cup\ Y)$$
+
+**Confianza (Confidence)**: La confianza mide la probabilidad de que una transacci?n que contiene los ?tems de X, tambi?n contenga los ?tems de Y (qu? tan confiable es la suposici?n hecha por la regla).
+
+$$C(X\Longrightarrow\ Y)=S(X\Longrightarrow\ Y)/S(X)$$
+
+**Lift**:El lift mide si la regla se debi? al azar, calculando el ratio entre la confianza de la regla y el consecuente de la regla o rhs.
+
+$$lift(X\Longrightarrow\ Y)=S(X\Longrightarrow\ Y)/S(X)*S(Y)$$
+
+$$lift > 1; X, Y positivamente\ correlacionados\\$$
+Indica que ese conjunto aparece una cantidad de veces acorde a lo esperado bajo condiciones de independencia.
+
+$$lift <1; X,\ Y negativamente \ correlacionados$$
+Los productos se encuentren en el conjunto m?s veces de lo normal.
+
+$$lift=1; X,\ Y\ independientes$$
+Los productos no est?n formando parte del mismo conjunto m?s veces de lo normal.
+
+
+
+Para crear las reglas de asociaci?n se sigue el mismo proceso que para obtener itemsets frecuentes pero, adem?s de especificar un soporte m?nimo, se tiene que establecer una confianza m?nima para que una regla se incluya en los resultados. En este caso, se emplea una confianza m?nima del 70%.
+
+```{r}
+soporte <- 60 / dim(transacciones)[1]
+soporte
+```
+##Creaci?n de Reglas de Asociaci?n.
+Se crean reglas de asociaci?n para lograr obtener de resultado cual ser? su pr?ximo destino seg?n los pa?ses a los cuales han viajado los usuarios.
+```{r}
+reglas <- apriori(data = transacciones,parameter = list(support = 0.1,confidence = 0.70,target = "rules"))
+```
+
+```{r}
+summary(reglas)
+```
+
+Se han identificado un total de 2822 reglas, la mayor?a de ellas formadas por 4 items en el antecedente (parte izquierda de la regla).
+
+```{r}
+inspect(sort(x=reglas, decreasing = TRUE, by="confidence"))
+```
+##Gr?fico de los 10 destinos mas frecuentes.
+```{r}
+itemFrequencyPlot(transacciones,topN=10,type="absolute")
+```
+##Grafico de red de las 20 reglas con mayor confianza.
+```{r}
+plot(head(reglas,20), method="graph", control=list(type="items"))
+
+plot(head(reglas,30), method="graph", interactive = TRUE ,measure = "support")
+```
+##Gr?fico de matriz de las 100 reglas con mayor confianza.
+```{r}
+plot(head(reglas,50), method="grouped")
+```
+##Gr?fico de dispersi?n de todas las reglas.
+```{r}
+plot(reglas) 
+```
+#Reglas redundantes
+
+Dos reglas son idénticas si tienen el mismo antecedente (parte izquierda) y consecuente (parte derecha). Supongase ahora que una de estas reglas tiene en su antecedente los mismos items que forman el antecedente de la otra, junto con algunos items más. La regla más generica se considera redundante, ya que no aporta información adicional. En concreto, se considera que una regla X => Y es redundante si existe un subset X' tal que existe una regla X' => Y cuyo soporte es mayor.
+
+X => Y es redundante si existe un subset X' tal que: conf(X' -> Y) >= conf(X -> Y)
+```{r}
+reglas_redundantes <- reglas[is.redundant(x = reglas, measure = "confidence")]
+reglas_redundantes
+
+inspect(reglas_redundantes)
+```
+#LINKOGRAFIA
+
+https://mauricioanderson.com/curso-r-tidyr/
+
+https://mauricioanderson.com/curso-r-dplyr/
+
+http://apuntes-r.blogspot.com/2015/07/reglas-de-asociacion.html+
+
+https://www.r-bloggers.com/association-rule-learning-and-the-apriori-algorithm/
+
+http://www.dma.ulpgc.es/profesores/personal/stat/cursoR4ULPGC/9b-grafBarplot.html
+
+http://www.rpubs.com/dsulmont/37913
+
+https://rpubs.com/Joaquin_AR/397172
+
+
+
+
+
+
+
+
+
+
+

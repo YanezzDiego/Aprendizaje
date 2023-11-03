@@ -1,0 +1,117 @@
+---
+title: "Reglas de Asociacion"
+author: "Diego Yáñez"
+date: '2022-07-30'
+output: html_document
+---
+
+
+```{r}
+install.packages("arulesViz")
+install.packages("readr")
+install.packages("readxl")
+install.packages("tidyverse")
+library(arules)
+library(arulesViz)
+library(datasets)
+library(readxl)
+library(readr)
+library(tidyverse)
+```
+
+```{r}
+#Importar base de datos
+compras<- read_excel("~/R/Proyectos/Mineria de Datos 2021/compras.xlsx")
+View(compras)
+dim(compras) #Son 1000 clientes que pueden o no comprar 10 productos diferentes (pan, mantequilla, leche, huevos, salchichas, harina, galletas, mermelada, atun, caramelos)
+```
+
+```{r}
+#Transformaciones
+for (i in 2:ncol(compras)) {
+  compras[[i]]<-as.factor(compras[[i]])
+}
+compras<-gather(data=compras,key="Producto",value = "Compra",2:11)
+compras<-arrange(compras,Id)
+
+for(i in 1:nrow(compras)){
+  if(compras[i,3]=="TRUE"){
+    compras[i,3]<-"1"
+  }
+  if(compras[i,3]=="FALSE"){
+    compras[i,3]<-"0"
+  }
+}
+
+compras<-filter(compras,Compra=="1")
+compras<-select(compras,Id,Producto)
+view(compras)
+
+compras_split<- split(x=compras$Producto, f=compras$Id)
+class(compras_split)
+
+transaccion<- as(compras_split, Class = "transactions")
+
+tamaños<-size(transaccion)
+summary(tamaños) # El numero que productos que menos compra un individuo es 2, la media es 6 y el máximo son los 10 de la lista.
+
+View(compras)
+```
+
+
+```{r}
+#Frecuencias
+frecuencia_absoluta <- itemFrequency(x=transaccion,type="absolute")
+frecuencia_absoluta <- sort( frecuencia_absoluta ,decreasing = T) 
+frecuencia_absoluta<-as.data.frame(frecuencia_absoluta)
+view(frecuencia_absoluta) #tabla de freceuncias ordenadas de mayor a menor
+
+frecuencia_relative <- itemFrequency(x=transaccion,type="relative")
+frecuencia_relative <- sort( frecuencia_relative ,decreasing = T) 
+frecuencia_relative<-as.data.frame(frecuencia_relative)
+
+view(frecuencia_relative) #tabla de frecuencias relativas (%) ordenadas de mayor a menor
+
+#El producto mas frecuente fue el pan y el menos frecuente fue el atun.
+
+# Como se puede ver en la tabla de frecuencia absolutam. TODOS LOS PRODUCTOS SE HAN COMPRADO MÁS DE 50 VECES.
+```
+
+
+```{r}
+#5 productos más comprados - gráfico
+mas_comprados <- itemFrequency(x=transaccion,type="absolute")
+mas_comprados <- sort( mas_comprados ,decreasing = T)
+mas_comprados <- head(mas_comprados,5)
+mas_comprados<-as.data.frame(mas_comprados)
+
+itemFrequencyPlot(transaccion,topN=5,type="absolute")
+```
+
+```{r}
+soporte<-60/dim(transaccion)[1]
+itemsets <- apriori(data=transaccion, list(support=soporte,minlen=1,maxlen=21,target="frequent itemset"))
+
+#Transacciones en una tabla con los dos productos más frecuentes.
+
+itemsets_filtrado<-subset(itemsets,subset= items %in% "Pan", "Harina")
+inspect(itemsets_filtrado)
+
+top_2<- sort(itemsets, by="support",decreasing = T)[1:2]
+inspect(top_2)
+
+#15 mejores Reglas de asociacion con mayor confianza 
+
+reglas <- apriori(data=transaccion, parameter = list(support=0.1,confidence=0.7,target="rules"))
+
+
+inspect(sort(x=reglas,decreasing = T,by="confidence"))
+
+plot(head(reglas,15),method="graph", control=list("items"))
+plot(head(reglas,15),method="graph", interactive = TRUE ,measure = "support")
+plot(head(reglas,15),method="grouped")
+plot(reglas)
+```
+
+
+

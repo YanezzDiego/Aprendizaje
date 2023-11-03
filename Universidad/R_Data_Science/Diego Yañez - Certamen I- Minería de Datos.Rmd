@@ -1,0 +1,477 @@
+---
+title: 'Certamen I'
+author: "Diego Yáñez Oyarce"
+date: " 18 05 2021"
+output:
+  html_document:
+    toc: yes
+    toc_float: yes
+    toc_collapsed: yes
+    toc_depth: 3
+    fig_caption: yes
+    number_sections: no
+    code_download: no
+    df_print: paged
+  pdf_document:
+    toc: yes
+    toc_depth: '3'
+editor_options: 
+  markdown: 
+    wrap: 72
+---
+
+<div style="text-align: justify">
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Problema.
+
+La industria de la celulosa en Chile, en la actualidad, cuenta con sistemas operativos que permiten el control y seguimiento de los procesos, acción que se ejecuta en diferentes etapas, a través de la medición de variables que influyen directamente en la calidad del producto.  Estos sistemas operativos, permiten recolectar y almacenar una gran cantidad de datos, los cuales son utilizados para el control instantáneo del proceso, no obstante, estos datos no se utilizan para generar información relevante para el control del proceso o la toma de decisiones. 
+
+La recolección de datos, permite conocer el proceso específico denominado Blanqueo de pulpa, condición que genera la posibilidad de pronosticar comportamientos que disminuirán la desviación de la variable objetivo, consumo de dióxido de cloro, reduciendo los costos en insumos químicos. 
+
+En el periodo de estudio, enero 2019 a Agosto 2019, el consumo específico de Dióxido de Cloro por tonelada de pulpa ha estado por sobre las condiciones de diseño 17,5 kg/ADt. Como se indica Gráfico , los consumos específicos promedio son de 19.10 kg/ADt con un máximo de 20.37 kg/ADt.
+
+
+![](BB.PNG)
+
+Considerando los valores medio de consumo de dióxido de cloro en periodo de estudio, se tiene un potencial ahorro anual de USD1.600.00 anuales, al ajustar al valor de diseño. Se espera con este trabajo de tesis desarrollar un modelo que permita la optimización del proceso de blanqueo para alcanzar ahorro potencial de un 30% en consumo de productos químicos, que equivale a un beneficio de  USD500.000.
+
+
+## Proceso de Blanqueo.
+
+El blanqueo tiene como objeto incrementar la blancura de la celulosa mediante el retiro de la lignina presente en la madera, logrando así que ésta permanezca en el tiempo sin alterar mayormente las propiedades físico-mecánicas de la fibra. El blanqueo de la pulpa no debe realizarse en una sola etapa, esto debido a que, el alcanzar un alto nivel de blancura genera daños estructurales a la fibra de la madera. 
+En la actualidad, los procesos de Blanqueo deben ser del menor impacto con el medio ambiente, y para lograr esta meta se han desarrollado procesos ECF (libre de cloro elemental) y TCF (totalmente libre de cloro elemental) los cuales, permiten, mediante 4 etapas, retirar la lignina (que entrega la resistencia mecánica y color a las fibras) sin dañar la celulosa y generar efluentes poco nocivos al ambiente (Reyes,2011). 
+En las dos primeras etapas de blanqueo, ocurre la mayor remoción de lignina residual, y en las etapas finales, sucede un aumento ostensible de la blancura, gracias a la desactivación de los grupos cromóforos presentes en ella, que le confieren la característica del color. 
+
+ La secuencia de blanqueo seleccionada para la línea de pino consta de 4 etapas: D(Eop)DD1, provisto de lavadores entre todas las etapas. Como se observa en la figura . En el área blanqueo se distinguen los siguientes subsistemas:
+
+Etapa Pre-Blanqueo: Lava la pulpa proveniente del Área de Lavado para retirarle la soda residual que contiene antes de ingresar a la primera etapa de Blanqueo (Etapa Do), permitiendo de esta manera, disminuir el consumo de reactivos químicos.
+
+Etapa D0: Reacciona la lignina contenida en la pulpa con dióxido de cloro proveniente del Área Química, de tal modo de disminuir el contenido de lignina e ir incrementando la blancura de la pulpa.
+
+
+Etapa EOP: Reacciona la lignina que aún permanece en la pulpa con oxígeno y peróxido de hidrógeno, además se solubilizan con soda cáustica los compuestos generados en la primera y segunda etapa del blanqueo, disminuyendo el contenido de la lignina.
+
+Etapa D1: Reacciona la lignina que aún permanece en la pulpa con dióxido de cloro, disminuyendo su contenido, para así incrementar la blancura en la etapa D2.
+
+Etapa D2 y Almacenamiento: Reacciona la lignina que aún permanece en la pulpa con dióxido de cloro, de modo que exista una disminución de su contenido, alcanzando así una blancura mayor a 90 °ISO al final de blanqueo. En la figura N°1 se muestra el proceso de Blanqueo.
+
+
+
+![](BB1.PNG)
+
+
+## Tipos de variables en el proceso:
+
+-	Variables sin medición: el registro está presente, pero se mantiene en estado inhabilitado
+-	Variables Control de Elementos: Son Señales que muestran el accionamiento de elementos (motores, válvulas y otros) pero no representan el comportamiento del proceso
+-	Variables de valor fijo: Variables con valor constante
+-	Variables Criterio Experto: Variables identificadas por Operadores como influyentes en proceso.
+-	Variables con Medición Continua
+
+## Instrucciones
+
+Implemente el proceso de extracción del conocimiento **(KDD)**, aplicando
+los primeros los pasos del proceso. se pide:
+
+
+1. Familiarizarce con las variables y describirlas. (10 pts)
+
+```{r}
+library(tidyverse)
+library(readr)
+library(readxl)
+
+#En primer lugar cargaremos nuestros datos, y eliminaremos los espacios, cambiandolos por NA.
+ene<-read.csv2("ene19 selec.csv",na.strings = "")
+feb<-read.csv2("feb19 selec.csv",na.strings = "")
+mar<-read.csv2("mar19 selec.csv",na.strings = "")
+abr<-read.csv2("ab19 selec.csv",na.strings = "")
+may<-read.csv2("may19 selec.csv",na.strings = "")
+jun<-read.csv2("jun19 selec.csv",na.strings = "")
+jul<-read.csv2("jul19 selec.csv",na.strings = "")
+ago<-read.csv2("ag19 selec.csv",na.strings = "")
+
+#Para describir las variables, veremos la tabla del mes de enero y sus unidades de medida.
+
+view(ene)
+unidad_medida<-ene[c(1,2),]
+View(unidad_medida)
+
+#La columna 1, posee la fecha exacta de la medicion.
+
+#Las columnas de "consumo", hablan del consumo total de un compuesto (kg/s -> ClO2, l/s -> H2S04) o del consumo en alguna etapa y laboratorio especifico.
+
+#Las columnas que hablan de "flujo", 
+
+#El kappa habla de "blancura", es el volumen de permanganato de potasio consumido por 1g de pulpa de celulosa, por lo que el minikappa debe ser un derivado de esta definición.
+#Las columnas de "factores" son variables de control de elementos (en este caso, de las prensas)
+
+#Las columnas de PH indican el grado de acídez o basicidad en una etapa en específico.
+
+#Las columnas de consistencia se refiere al grado de estabilidad.
+
+#Tambíen existen variables de valor fijo, como por ejemplo Flujo.H2SO4.Etapa.D0[df$Flujo.H2SO4.Etapa.D0 y CE05_IP21_547FI1019.
+
+
+
+```
+
+
+2. Crear un Data frame que reuna todas la tablas. (10 pts)
+
+```{r}
+#Para poder unirlos en un dataframe, debemos eliminar el registro 1 y 2 de las tablas, ya que esos datos no nos sirven, solo nos sirven para poder determinar cuales son las unidades de medida.
+
+
+ene<-ene[-c(1,2),]
+feb<-feb[-c(1,2),]
+mar<-mar[-c(1,2),]
+abr<-abr[-c(1,2),]
+may<-may[-c(1,2),]
+jun<-jun[-c(1,2),]
+jul<-jul[-c(1,2),]
+ago<-ago[-c(1,2),]
+
+View(ene)
+
+#Dada el gran número de datos, utilizaremos rbind por separado para evitar problemas al juntar las tablas.
+
+df<-NULL
+df<-rbind(ene,feb)
+df<-rbind(df,mar,abr)
+df<-rbind(df,may,jun)
+df<-rbind(df,jul,ago)
+
+
+#Ahora , df , tiene todas nuestras tablas.
+View(df)
+```
+
+3. Inspeccione el data frame  e identifique y etiquete los missing values presentes. Considere tanto valores erroneos como valores inexistentes. (10 pts)
+
+```{r}
+
+#Cambiaremos todas las columnas a numericas (menos la dependiente y la fecha), para eso primero cambiaremos las "," por "."
+for (i in 2:100) {
+ df[[i]] <- sub(",", ".", df[[i]], fixed = TRUE)
+}
+
+
+for (i in 2:100) {
+  df[[i]]<-as.numeric(df[[i]])
+}
+
+#Nuestra variable "Cumple o no cumple", debe ser binario
+df$CUMPLE.O..NO.CUMPLE<-as.factor(df$CUMPLE.O..NO.CUMPLE)
+
+
+#Luego de ya haber cambiado la clase de nuestros atributos, podemos comenzar a identificar y etiquetar los missing values. Para este enunciado, solo se eliminaran bajo mi criterio utilizando las funciones summary (luego, el uso de un boxplot ayudará a eliminar los outliers en el enunciado 7).
+
+summary(df)
+
+#Los consumos no pueden ser negativos 
+
+for (i in 2:5) {
+ df[[i]][df[[i]]<0]<-NA
+}
+
+df$Consumo.NaOH.Etapa.D2[df$Consumo.NaOH.Etapa.D2 < 0 ]<- NA
+df$Consumo.NaOH.Etapa.Eop[df$Consumo.NaOH.Etapa.Eop < 0 ]<- NA
+
+
+#Según lo indagado en internet, el KAPPA es el volumen de permanganato de potasio consumido por 1g de pulpa de celulosa, por lo tanto, no puede ser negativo. (de igual manera con el minikappa)
+
+df$Kappa.Entr.Prensa.preblanqueo.L1[df$Kappa.Entr.Prensa.preblanqueo.L1<0] <- NA
+df$Minikappa.EOp..DCS.[df$Minikappa.EOp..DCS.<0] <- NA
+
+#Los PH solo toman valores de 0 a 14
+
+for (i in 8:10){
+ df[[i]][df[[i]]<0 | df[[i]]>14]<- NA
+}
+
+df$PH.Etapa.EOP.indirecta[df$PH.Etapa.EOP.indirecta<0 | df$PH.Etapa.EOP.indirecta>14] <- NA
+
+for (i in 14:16){
+ df[[i]][df[[i]]<0 | df[[i]]>14]<- NA
+}
+
+#Los factor.dil poseen datos negativos.
+
+df$Factor.dil.prensa.D1.L1[df$Factor.dil.prensa.D1.L1 < 0 ] <- NA
+df$Factor.dil.prensa.D2.L1[df$Factor.dil.prensa.D2.L1 < 0 ] <- NA
+df$Factor.dil.prensa.E0P.L1[df$Factor.dil.prensa.E0P.L1 < 0] <- NA
+df$Factor.dil.prensa.pre.Blanq..L1[df$Factor.dil.prensa.pre.Blanq..L1 < 0 ] <- NA
+
+# Los flujos no pueden ser negativos.
+df$Flujo.NaOH.Etapa.Eop[df$Flujo.NaOH.Etapa.Eop < 0 ] <- NA
+df$Flujo.NaOH.Etapa.D2[df$Flujo.NaOH.Etapa.D2 < 0 ] <- NA
+
+
+
+#Cabe destacar que para mi, el torque SI puede ser negativo, el signo solo determina el sentido del giro, por lo que no se eliminará las mediciones negativas, solo se les cambiará de signo.
+df$Torque.maximo.prensa.EOP <- abs(df$Torque.maximo.prensa.EOP)
+summary(df)
+
+
+
+View(df)
+
+
+
+```
+
+4. A través de un ciclo for muestre el total de missing values presentes en cada una de las columnas, además indique que porcentaje del total de datos son aquellos missin values. (10 pts)
+
+```{r}
+
+for (i in 2:100) {
+   sumacol <- sum(is.na(df[,i]))
+  cat("la suma de NA de la columna",i,"es",sumacol," y representa ",round(sumacol/nrow(df)*100,2) ,"% del total de datos de la columna",i, "\n")
+}
+
+View(df)
+summary(df)
+
+```
+
+5. Eliminar varibles que no aporten informacion. (10 pts)
+
+```{r}
+
+#Si vemos con un summary, podemos observar que hay dos columnas que no aportan información, ya que poseen solo 0 en los datos .
+
+df$Flujo.H2SO4.Etapa.D0[df$Flujo.H2SO4.Etapa.D0 == 0] <- NA 
+summary(df$Flujo.H2SO4.Etapa.D0)
+
+df$CE05_IP21_547FI1019[df$CE05_IP21_547FI1019== 0 ] <- NA
+summary(df$CE05_IP21_547FI1019)
+
+df$Flujo.H2SO4.Etapa.D0 <- NULL
+df$CE05_IP21_547FI1019 <- NULL
+
+#Además eliminaría la columna 33 ( Factor.dil.prensa.D2.L1 ) ya que aproximadamente un 50% de los datos totales de la columna son NA (consultar pregunta 4).
+df$Factor.dil.prensa.D2.L1 <- NULL
+
+
+#Tambíen se eliminará el siguiente atributo ya que posee solo 0 en más de la mitad de sus datos.
+NA_CONSUMO_BISULFITO<- sum(df$Consumo.Bisulfito.Etapa.D2==0) + sum(is.na(df$Consumo.Bisulfito.Etapa.D2))
+cat(NA_CONSUMO_BISULFITO/nrow(df)*100 ,"% de datos iguales a 0 o NA en la columna Consumo.Bisulfito.Etapa.D2" )
+
+ df$Consumo.Bisulfito.Etapa.D2 <- NULL
+ 
+ #Tambíen se eliminará el siguiente atributo ya que posee solo 0 en más de la mitad de sus datos.
+
+ df$Consumo.Bisulfito.Etapa.D2 <- NULL
+ 
+
+
+```
+
+6. Eliminar variables con altas correlaciones superiores a 0.8 use un ciclo `for`(Para esto normalice los datos). (10 pts)
+
+```{r}
+library(ggplot2)
+library(corrplot)
+library(stats)
+#Para trabajar este enunciado, crearemos otro dataframe normalizado para trabajar omitiendo los NA para poder hacer la matriz de correlaciones.
+df_cor <- NULL
+
+df_cor <- na.omit(df)
+View(df_cor)
+
+#Nuestro nuevo DF no puede tener el atributo X (fecha) y nuestro label debe ser númerico.
+
+df_cor$X <- NULL
+df_cor$CUMPLE.O..NO.CUMPLE<-ifelse(df_cor$CUMPLE.O..NO.CUMPLE=="Cumple",no=1,yes=2)
+
+df_cor<- cor(df_cor, method = "pearson")
+df_cor[lower.tri(df_cor, diag = FALSE)] <- 0
+df_cor <- round(df_cor, digits = 2)
+
+correlaciones_altas<-c()
+for (i in 1:ncol(df_cor)) {
+  for (j in 1:nrow(df_cor)) {
+    if(abs(df_cor[i,j]) >= 0.8 & abs(df_cor[i,j]) != 1){
+      correlaciones_altas <- append(correlaciones_altas,j)
+      cat("la columna",j," con la fila",i,"tienen una correlacion mayor a 0.8, por lo tanto se eliminará una de las dos","\n")
+    }
+  }
+}
+
+df <- df[,-correlaciones_altas]
+View(df)
+
+df$CUMPLE.O..NO.CUMPLE<-ifelse(df$CUMPLE.O..NO.CUMPLE=="Cumple",no=1,yes=2)
+
+```
+
+7. Imputar Datos fuera de rango por metodo KNN y los NA con ek metodo de  Regresión para ambos casos cree un ciclo `for`. (10 pts)
+
+```{r}
+
+#Dada la gran cantidad de datos del DF original , extraeremos una muestra aleatoria de 7000 datos.
+muestra<- sample_n(na.omit(df),7000,replace = FALSE)
+muestra$X <- NULL
+view(muestra)
+
+
+#Al obtener una muestra representativa de nuestro DF, podemos comenzar a aplicar la regresion lineal. Para ello, primero identificaremos con el backward cual es el modelo que mejor describe a nuestra variable CUMPLE O NO CUMPLE.
+M1 <- lm(muestra$'CUMPLE.O..NO.CUMPLE' ~. , data=muestra)
+step(M1, direction = "backward")
+```
+
+lm(formula = muestra$CUMPLE.O..NO.CUMPLE ~ Consumo.ClO2.Etapa.D0.L1 + 
+    Consumo.ClO2.Etapa.D1.L1 + Consumo.ClO2.Etapa.D2.L1 + Consumo.Total.ClO2 + 
+    Kappa.Entr.Prensa.preblanqueo.L1 + Brillo.D0.DCS + PH.etapa.D0 + 
+    PH.etapa.D0.indirecta + PH.Etapa.EOP + Minikappa.EOp..DCS. + 
+    Brillo..Entrada.Torre.D1 + PH.etapa.D1 + PH.etapa.D1.indirecta + 
+    PH.etapa.D2.indirecta + Brillo.D2.DCS.L1 + Conductividad.Prensa.PreBlanqueo + 
+    Flujo.CLO2.Etapa.D0 + Flujo.NaOH.Etapa.Eop + Flujo.H2O2.Etapa.Eop + 
+    Flujo.O2.Etapa.Eop + Flujo.NaOH.Etapa.D1 + Flujo.CLO2.Etapa.D2 + 
+    Flujo.Bisulfito.a.Etapa.D2 + Factor.dil.prensa.D0.L1 + Factor.dil.prensa.E0P.L1 + 
+    Factor.dil.prensa.D1.L1 + Factor.dil.prensa.pre.Blanq..L1 + 
+    Nivel.Etapa.DO + Nivel.Etapa.EOP + Nivel.Etapa.D1 + Nivel.Etapa.D2 + 
+    Nivel.Etapa.Eop_2 + Nivel.Etapa.D2_2 + Consist.entrada.prensa.Pre.Blanq + 
+    Consistencia.entrada.prensa.D0 + Consistencia.aliment..Torre.EoP + 
+    Consistencia.entrada.prensa.EOP + Consistencia.aliment..Torre.D1 + 
+    Consistencia.entrada.prensa.D1 + Consistencia.aliment..Torre.D2 + 
+    Control.Cs.entrada.prensa.D2 + Consistencia.Etapa.Eop + Consistencia.Etapa.D1 + 
+    Consistencia.Etapa.D2 + Presion.OP.Reactor + Presion.OP.Reactor._2 + 
+    Temperatura.Etapa.D0 + Temperatura.OP.Reactor + Temperatura.Etapa.D1 + 
+    Temperatura.Etapa.D2 + Pulp.D2.stage + Torque.Motor.Hidr.ulico.preblanqueo + 
+    Torque.Motor.Hidraulico.D0 + Torque.Motor.Hidraulico.D1 + 
+    Torque.maximo.prensa.EOP + Consumo.ClO2.L1 + Totalizador.CIO2.L1 + 
+    Flujo.NaOH.Etapa.D2 + Flujo.H2SO4.Etapa.D0.L1 + Consumo.NaOH.Etapa.D2 + 
+    Conduct..Filt..Pre.Blanq.L1 + Blancura.D0..Lab..L1 + Blancura.D1..Lab..L1 + 
+    Blancura.D2..Lab..L1 + Concentracion.CLO2 + CONSUMO.ESPECIFICO.CLO2 + 
+    CUMPLE.O..NO.CUMPLE, data = muestra)
+    
+    ```{r}
+#NO SE LOGRÓ HACER LA REGRESIÓN LINEAL.
+
+
+#Para imputar por knn, como ya no tendremos NA (dado que los debimos haber imputado por regresión lineal), transformaremos nuestros OUTLIERS a NA y luego los imputaremos por metodo kNN.
+
+
+#Con el siguiente codigo, identificaremos los outliers y los etiquetaremos como NA.
+for (i in 2:(ncol(df)-1)) {
+  bplot <- boxplot(df[[i]])
+   df[[i]][ df[[i]] %in% bplot$out ] <- NA 
+   bplot <- NA
+}
+
+#Solo basta hacer imputacion por KNN.
+library(DMwR2)
+# df <- knnImputation(df) ** SE DEJARÁ COMO COMENTARIO ESTA LINEA DE CODIGO. Al no poder hacer la regresión lineal, RStudio no permite hacer KNN dado que al existir tantos NA, no logra encontrar un vecino.
+
+view(df)
+summary(df)
+
+```
+8. Eliminar filas duplicadas.  (10 pts)
+
+```{r}
+
+#Para eliminar filas duplicadas, solo es necesario utilizar la funcion UNIQUE
+unique(df)
+
+```
+
+
+9. Transforme las variables numericas  a categoricas elija usted el método. (10 pts)
+
+```{r}
+
+library(arules)
+#Para transformar a categoricas utilizaremos el siguiente comando. Crearemos un nuevo dataframe para hacerlo más ordenado y eliminaremos la FECHA ya que no nos servirá.
+
+df_discreto <- NULL
+df_discreto <- df
+df_discreto$X <- NULL
+
+view(df_discreto)
+
+df_discreto <- discretizeDF(df_discreto)
+
+```
+
+10 Genere un ranking con las variables de mas poder predictivo, para esto use el metodo chi-cuadrado, ganacia de informacion y Gini.  (10 pts)
+
+```{r}
+library(scales)
+#Dado que no se logró hacer la regresion lineal (item 7), se utilizará na.omit para poder tomar una decision en este apartado.
+
+df_discreto <- na.omit(df_discreto)
+
+
+#Luego, generaremos un data frame donde estarán los puntajes de los 3 metodos a implementar.
+
+df_puntajes <- data.frame(array(dim = c(ncol(df_discreto),4)))
+colnames(df_puntajes) <- c("Atributo","Chi Cuadrado", "Gain Information","Indice Gini")
+
+df_puntajes$Atributo <- colnames(df_discreto) 
+
+#Eliminaremos el label, ya que no nos sirven para predecir.
+df_puntajes <- df_puntajes[-(nrow(df_puntajes)),]
+
+
+#Chi Cuadrado
+
+for (i in 1:nrow(df_puntajes)) {
+  chi <- chisq.test(table(df_discreto[,i],df_discreto$CUMPLE.O..NO.CUMPLE))
+  df_puntajes[i,2] <- chi$statistic
+}
+
+
+#Gain Information
+library(FSelectorRcpp)
+
+gain_inf <- information_gain(CUMPLE.O..NO.CUMPLE~. ,df_discreto)
+
+for (i in 1:nrow(df_puntajes)) {
+  df_puntajes[i,3] <- gain_inf[i,2]
+}
+
+#Indice Gini
+
+gini_cat <- function(x,y){
+  #GINI DEL LABEL
+  gini_s <- 1-sum(prop.table(table(y))^2) 
+  #GINI DEL ATRIBUTO
+  clases_atribut <- unique(x) 
+  clases <- length(clases_atribut) 
+  tabla_frecuencia <- table(x,y) 
+  suma <- 0
+  for (i in 1:clases) {
+    frec_clase <- (tabla_frecuencia[i,1]+tabla_frecuencia[i,2])
+    p<- frec_clase/length(x)
+    s0 <- tabla_frecuencia[i,1]/frec_clase
+    s1 <- tabla_frecuencia[i,2]/frec_clase
+    s <- (p*(s0^2+s1^2))
+    suma <- s + suma
+  }
+  gini_a <- 1-suma
+  pp <- gini_s - gini_a
+  return(pp)
+}
+
+for (i in 1:nrow(df_puntajes)) {
+  gini_tabla <- gini_cat(df_discreto [,i] , df_discreto$CUMPLE.O..NO.CUMPLE)
+  df_puntajes[i,4]<- gini_tabla
+}
+
+
+#Si vemos nuestro df_puntajes, podemos observar que la variable que mejor evaluada resulta, es CONSUMO.ESPECIFICO.CLO2, resultando en los tres metodos con el mejor puntaje.
+view(df_puntajes)
+```
+
+
+
+
+
+<div>
